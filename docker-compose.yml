@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secomp-app-2026
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - DATABASE_URL=postgresql://secomp_admin:secomp_pass@postgres:5432/secomp2026_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      - JWT_SECRET=${JWT_SECRET:-secomp-2026-super-secure-jwt-token-secret-key-32chars}
+      - COOKIE_SECRET=${COOKIE_SECRET:-secomp-2026-cookie-signature-secret-key-must-be-long}
+      - CERTIFICATE_SIGN_SECRET=${CERTIFICATE_SIGN_SECRET:-secomp-2026-hmac-sha256-certificate-sign-secret}
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: secomp-postgres-2026
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: secomp_admin
+      POSTGRES_PASSWORD: secomp_pass
+      POSTGRES_DB: secomp2026_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_2026:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secomp_admin -d secomp2026_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: secomp-redis-2026
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata_2026:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata_2026:
+  redisdata_2026:
