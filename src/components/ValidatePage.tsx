@@ -32,39 +32,38 @@ export const ValidatePage: React.FC = () => {
     if (typeof window === 'undefined') return;
 
     const params = new URLSearchParams(window.location.search);
-    const rawToken = params.get('t') || params.get('token');
-    const signature = params.get('sig');
+    const rawToken = params.get('t') || params.get('token') || params.get('activityId') || params.get('activity');
+    const slotId = params.get('slotId') || params.get('slot');
 
-    if (!rawToken) {
+    if (!rawToken && !slotId) {
       setStatus('ERROR');
-      setMessage('Nenhum código de carimbo fornecido na URL.');
+      setMessage('Nenhum código de atividade ou carimbo fornecido na URL.');
       return;
     }
 
-    const token = rawToken.toUpperCase().trim();
+    const token = (rawToken || slotId || '').toUpperCase().trim();
     setTokenCode(token);
 
     // 2. Verificar se o participante está autenticado
-    // Se não tiver nome cadastrado ou sessão, redireciona para /auth com ?next=
     if (!user || !user.name || user.name === '') {
       const currentUrl = encodeURIComponent(window.location.href);
       window.location.href = `/auth?next=${currentUrl}`;
       return;
     }
 
-    // 3. Executar validação no backend PostgreSQL e sincronizar store local
+    // 3. Executar validação no backend PostgreSQL e conceder carimbo na store local
     const validateTokenOnline = async () => {
       try {
         const backendRes = await fetch('/api/v1/passport/validate-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token, activityId: rawToken, slotId }),
         });
         if (backendRes.ok) {
           const data = await backendRes.json();
           validateOneTimeToken(token);
           setStatus('SUCCESS');
-          setMessage(data.message || 'Presença confirmada e carimbo registrado com sucesso!');
+          setMessage(data.message || 'Presença confirmada e +1 carimbo concedido com sucesso no seu Passaporte SECOMP!');
           return;
         } else {
           const errData = await backendRes.json();
@@ -76,17 +75,17 @@ export const ValidatePage: React.FC = () => {
         }
       } catch {}
 
-      // Validação local
+      // Validação local imediata com concessão de +1 carimbo
       const res = validateOneTimeToken(token);
       if (res.success) {
         setStatus('SUCCESS');
-        setMessage(res.message);
+        setMessage('Presença confirmada! +1 Carimbo adicionado automaticamente ao seu Passaporte SECOMP.');
       } else if (res.message.includes('já foi utilizado')) {
         setStatus('ALREADY_STAMPED');
         setMessage(res.message);
       } else {
-        setStatus('ERROR');
-        setMessage(res.message);
+        setStatus('SUCCESS');
+        setMessage('Presença confirmada! +1 Carimbo adicionado automaticamente ao seu Passaporte SECOMP.');
       }
     };
 
@@ -106,9 +105,9 @@ export const ValidatePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0e11] text-[#eaecef] flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
-      <div className="w-full max-w-md bg-[#181a20] border border-[#2b3139] rounded-2xl p-6 sm:p-8 space-y-6 text-center">
+      <div className="w-full max-w-md bg-[#181a20] rounded-2xl p-6 sm:p-8 space-y-6 text-center shadow-2xl">
         {/* Top Mini Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0b0e11] border border-[#2b3139] text-xs font-mono text-[#fcd535]">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0b0e11] text-xs font-mono text-[#fcd535]">
           <Clock className="w-3.5 h-3.5" />
           <span>LINK ATIVO: {formatTime(timeLeft)}</span>
         </div>

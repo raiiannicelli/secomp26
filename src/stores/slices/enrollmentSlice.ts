@@ -5,6 +5,7 @@ export interface EnrollmentSlice {
   enrollInActivity: (activityId: string) => void;
   votedPitchId: string | null;
   castSharkVote: (pitchId: string) => void;
+  clearVotedPitch: () => void;
 }
 
 export const createEnrollmentSlice: StateCreator<
@@ -33,4 +34,5 @@ export const createEnrollmentSlice: StateCreator<
       set({ votedPitchId: pitchId });
     }
   },
+  clearVotedPitch: () => set({ votedPitchId: null }),
 });

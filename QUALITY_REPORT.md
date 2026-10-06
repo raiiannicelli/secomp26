@@ -1,1 +1,0 @@
-docs/QUALITY_REPORT.md

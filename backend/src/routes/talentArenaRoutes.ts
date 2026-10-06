@@ -67,13 +67,19 @@ export const talentArenaRoutes: FastifyPluginAsync = async (app: FastifyInstance
 
       try {
         const result = await prisma.$transaction(async (tx) => {
-          // 1. Verifica se o participante já possui agendamento prévio
+          // 1. Se o participante já possuir agendamento, libera o slot anterior
           const existingUserBooking = await tx.talentArenaBooking.findUnique({
             where: { userId },
           });
 
           if (existingUserBooking) {
-            throw new Error('USER_ALREADY_HAS_BOOKING');
+            await tx.talentArenaSlot.update({
+              where: { id: existingUserBooking.slotId },
+              data: { status: 'AVAILABLE' },
+            });
+            await tx.talentArenaBooking.delete({
+              where: { id: existingUserBooking.id },
+            });
           }
 
           // 2. Busca e valida disponibilidade do slot
@@ -94,8 +100,8 @@ export const talentArenaRoutes: FastifyPluginAsync = async (app: FastifyInstance
             data: {
               slotId,
               userId,
-              linkedinUrl,
-              fieldInterest,
+              linkedinUrl: linkedinUrl || '',
+              fieldInterest: fieldInterest || slot.companyName || 'Roda de Talentos',
             },
           });
 

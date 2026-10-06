@@ -1,1 +1,0 @@
-GROWTH2.0.md

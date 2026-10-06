@@ -24,7 +24,7 @@ export async function adminSecurityGuard(request: FastifyRequest, reply: Fastify
   }
 
   // Apenas papéis ADMIN e STAFF têm permissão em rotas de cockpit
-  if (request.user.role !== 'ADMIN' && request.user.role !== 'STAFF') {
+  if (request.user.role !== 'ADMIN') {
     return reply.status(403).send({
       error: 'FORBIDDEN',
       message: 'Permissões insuficientes para acessar o cockpit administrativo.',
@@ -232,6 +232,114 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       page,
       limit,
       stamps,
+    });
+  });
+
+  /**
+   * 4b. POST /api/v1/admin/stamps/manual-grant
+   * Concessão manual de presença/carimbo por administrador em auditoria presencial
+   */
+  app.post('/stamps/manual-grant', async (request: FastifyRequest<{ Body: { userId: string; activityId: string; points?: number; reason?: string } }>, reply) => {
+    const { userId, activityId, points = 1, reason = 'Auditoria Manual Presencial' } = request.body || {};
+
+    if (!userId || !activityId) {
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: 'userId e activityId são obrigatórios para conceder carimbo manual.',
+      });
+    }
+
+    const [targetUser, targetActivity] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      prisma.activity.findUnique({ where: { id: activityId } }),
+    ]);
+
+    if (!targetUser) {
+      return reply.status(404).send({ error: 'USER_NOT_FOUND', message: 'Participante não localizado.' });
+    }
+    if (!targetActivity) {
+      return reply.status(404).send({ error: 'ACTIVITY_NOT_FOUND', message: 'Atividade não localizada.' });
+    }
+
+    const existing = await prisma.attendanceRecord.findUnique({
+      where: {
+        uq_user_activity_attendance: {
+          userId,
+          activityId,
+        },
+      },
+    });
+
+    if (existing) {
+      return reply.status(409).send({
+        error: 'ALREADY_STAMPED',
+        message: `O participante ${targetUser.fullName} já possui carimbo para a atividade "${targetActivity.title}".`,
+      });
+    }
+
+    const stampType = targetActivity.isWarmup ? 'WARMUP_WORKSHOP' : 'LECTURE';
+
+    const record = await prisma.attendanceRecord.create({
+      data: {
+        userId,
+        activityId,
+        stampType,
+        pointsAwarded: points,
+      },
+    });
+
+    await publishAdminEvent({
+      type: 'STAMP_ADDED',
+      payload: {
+        userId,
+        activityId,
+        activityTitle: targetActivity.title,
+        isManual: true,
+        reason,
+        adminEmail: request.user?.email,
+      },
+    });
+
+    return reply.status(201).send({
+      success: true,
+      message: `Carimbo manual concedido com sucesso para ${targetUser.fullName}!`,
+      record,
+    });
+  });
+
+  /**
+   * 4c. DELETE /api/v1/admin/stamps/:id
+   * Revogação manual de presença/carimbo em auditoria de inconformidade
+   */
+  app.delete('/stamps/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+    const { id } = request.params;
+
+    const record = await prisma.attendanceRecord.findUnique({
+      where: { id },
+      include: { user: true, activity: true },
+    });
+
+    if (!record) {
+      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Registro de carimbo não encontrado.' });
+    }
+
+    await prisma.attendanceRecord.delete({ where: { id } });
+
+    await publishAdminEvent({
+      type: 'STAMP_ADDED',
+      payload: {
+        id,
+        userId: record.userId,
+        userName: record.user.fullName,
+        activityTitle: record.activity.title,
+        adminEmail: request.user?.email,
+        revoked: true,
+      },
+    });
+
+    return reply.status(200).send({
+      success: true,
+      message: `Presença de ${record.user.fullName} em "${record.activity.title}" revogada com sucesso.`,
     });
   });
 

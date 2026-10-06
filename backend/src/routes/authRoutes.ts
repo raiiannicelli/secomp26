@@ -58,8 +58,8 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     } else if (email.endsWith('@alunos.utfpr.edu.br')) {
       role = 'STUDENT';
     } else if (email.endsWith('@utfpr.edu.br')) {
-      role = explicitRole === 'ADMIN' ? 'ADMIN' : 'STAFF';
-    } else if (explicitRole === 'STUDENT') {
+      role = explicitRole === 'ADMIN' ? 'ADMIN' : 'STUDENT';
+    } else {
       role = 'VISITOR';
     }
 
@@ -284,11 +284,11 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       where: { id: request.user!.userId },
       include: {
         certificate: true,
+        talentBookings: true,
         _count: {
           select: {
             attendanceRecords: true,
             preEnrollments: true,
-            talentBookings: true,
           },
         },
       },
@@ -322,7 +322,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         stats: {
           totalStamps: user._count.attendanceRecords,
           preEnrollments: user._count.preEnrollments,
-          talentBookings: user._count.talentBookings,
+          talentBookings: user.talentBookings ? 1 : 0,
           hasCertificate: !!user.certificate,
         },
       },

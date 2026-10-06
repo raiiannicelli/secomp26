@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Lock, ShieldCheck, Mail, UserCheck, AlertCircle } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 
@@ -26,7 +26,13 @@ function getCsrfToken(): string {
 }
 
 export const AuthPage: React.FC = () => {
-  const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode') === 'register') return 'REGISTER';
+    }
+    return 'LOGIN';
+  });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -52,15 +58,18 @@ export const AuthPage: React.FC = () => {
 
   const handleRedirectAfterAuth = (role: string, email?: string) => {
     const nextUrl = getNextParam();
-    if (email === 'raimorato@alunos.utfpr.edu.br') {
-      window.location.href = '/chameguinho';
+    if (
+      email === 'raimorato@alunos.utfpr.edu.br' &&
+      (role === 'ADMIN' || !role || role === 'STUDENT')
+    ) {
+      window.location.href = nextUrl ? decodeURIComponent(nextUrl) : '/chameguinho';
       return;
     }
     if (nextUrl) {
       window.location.href = decodeURIComponent(nextUrl);
-    } else {
-      window.location.href = '/';
+      return;
     }
+    window.location.href = '/';
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -104,6 +113,7 @@ export const AuthPage: React.FC = () => {
 
       const res = await fetch('/api/v1/auth/register', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': getCsrfToken(),
@@ -111,23 +121,35 @@ export const AuthPage: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Erro ao registrar usuário.');
+      let data: any = null;
+      const text = await res.text();
+      if (text && text.trim().length > 0) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
       }
 
-      const role = data.user?.role || (cleanLocal + domain === 'raimorato@alunos.utfpr.edu.br' ? 'ADMIN' : (domain === '@alunos.utfpr.edu.br' ? 'STUDENT' : 'VISITOR'));
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || `Falha no cadastro (HTTP ${res.status}). Verifique os dados ou tente novamente.`);
+      }
+
+      if (!data?.user) {
+        throw new Error('Resposta do servidor inválida. Usuário não retornado.');
+      }
+
       setUser({
-        name: cleanLocal,
-        email: cleanLocal + domain,
-        ra: payload.ra,
-        role,
-      } as any);
+        name: data.user.fullName || data.user.name || cleanLocal,
+        email: data.user.email || (cleanLocal + domain),
+        ra: data.user.raMasked || payload.ra,
+        role: data.user.role,
+      });
 
       setSuccessMessage('Conta criada com sucesso! Redirecionando...');
-      setTimeout(() => handleRedirectAfterAuth(role, cleanLocal + domain), 800);
+      setTimeout(() => handleRedirectAfterAuth(data.user.role, data.user.email), 800);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Falha ao conectar com o servidor.');
+      setErrorMessage(err.message || 'Erro ao conectar com o servidor.');
     } finally {
       setLoading(false);
     }
@@ -153,6 +175,7 @@ export const AuthPage: React.FC = () => {
     try {
       const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': getCsrfToken(),
@@ -163,21 +186,33 @@ export const AuthPage: React.FC = () => {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Credenciais inválidas.');
+      let data: any = null;
+      const text = await res.text();
+      if (text && text.trim().length > 0) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
       }
 
-      const role = data.user?.role || (cleanEmail === 'raimorato@alunos.utfpr.edu.br' ? 'ADMIN' : 'STUDENT');
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || `Credenciais inválidas (HTTP ${res.status}).`);
+      }
+
+      if (!data?.user) {
+        throw new Error('Resposta do servidor inválida. Usuário não autenticado.');
+      }
+
       setUser({
-        name: data.user?.name || cleanEmail.split('@')[0],
-        email: cleanEmail,
-        ra: data.user?.ra,
-        role,
-      } as any);
+        name: data.user.fullName || data.user.name || cleanEmail.split('@')[0],
+        email: data.user.email || cleanEmail,
+        ra: data.user.raMasked || data.user.ra,
+        role: data.user.role,
+      });
 
       setSuccessMessage('Autenticado com sucesso! Redirecionando...');
-      setTimeout(() => handleRedirectAfterAuth(role, cleanEmail), 700);
+      setTimeout(() => handleRedirectAfterAuth(data.user.role, data.user.email), 700);
     } catch (err: any) {
       setErrorMessage(err.message || 'Falha ao autenticar.');
     } finally {
@@ -226,11 +261,10 @@ export const AuthPage: React.FC = () => {
               setMode('LOGIN');
               setErrorMessage(null);
             }}
-            className={`py-2 rounded-lg transition-all ${
-              mode === 'LOGIN'
+            className={`py-2 rounded-lg transition-all ${mode === 'LOGIN'
                 ? 'bg-[#fcd535] text-[#181a20]'
                 : 'text-[#707a8a] hover:text-white'
-            }`}
+              }`}
           >
             ENTRAR
           </button>
@@ -240,11 +274,10 @@ export const AuthPage: React.FC = () => {
               setMode('REGISTER');
               setErrorMessage(null);
             }}
-            className={`py-2 rounded-lg transition-all ${
-              mode === 'REGISTER'
+            className={`py-2 rounded-lg transition-all ${mode === 'REGISTER'
                 ? 'bg-[#fcd535] text-[#181a20]'
                 : 'text-[#707a8a] hover:text-white'
-            }`}
+              }`}
           >
             CRIAR CONTA
           </button>

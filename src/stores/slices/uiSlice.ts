@@ -1,15 +1,31 @@
 import { StateCreator } from 'zustand';
 
 export interface UserProfile {
+  id?: string;
   name: string;
   email?: string;
   ra?: string;
+  role?: string;
 }
+
+export const isUserAuthenticated = (user: UserProfile | null | undefined): boolean => {
+  if (!user) return false;
+  if (!user.email || user.email === '' || user.email === 'rai***@utfpr.edu.br') return false;
+  return Boolean(user.name && user.name.trim() !== '');
+};
+
+export const isUserAdmin = (user: UserProfile | null | undefined): boolean => {
+  if (!isUserAuthenticated(user)) return false;
+  return Boolean(
+    user?.role === 'ADMIN' &&
+    user?.email === 'raimorato@alunos.utfpr.edu.br'
+  );
+};
 
 export interface UISlice {
   // Usuário / Perfil
-  user: UserProfile;
-  setUser: (user: UserProfile) => void;
+  user: UserProfile | null;
+  setUser: (user: UserProfile | null) => void;
 
   // Modais de Controle
   isEnrollModalOpen: boolean;
@@ -34,11 +50,7 @@ export interface UISlice {
   closeSharkModal: () => void;
 }
 
-const DEFAULT_USER: UserProfile = {
-  name: 'Rai Moratto',
-  email: 'rai***@utfpr.edu.br',
-  ra: 'a2489120',
-};
+const DEFAULT_USER: UserProfile | null = null;
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   user: DEFAULT_USER,

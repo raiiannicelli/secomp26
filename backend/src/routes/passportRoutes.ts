@@ -303,12 +303,138 @@ export const passportRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
   );
 
   /**
+   * POST /api/v1/passport/validate (Alias SDD-SPEC 4.0)
+   */
+  app.post(
+    '/validate',
+    {
+      preHandler: [authGuard],
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const parseResult = ValidateAttendanceTokenSchema.safeParse(request.body);
+
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'VALIDATION_ERROR',
+          message: 'Formato de token inválido. O formato deve ser SEC-XXX ou SEC-CAT-XXX.',
+        });
+      }
+
+      const formattedToken = parseResult.data.token.toUpperCase().trim();
+      const tokenHash = crypto.createHash('sha256').update(formattedToken).digest('hex');
+      const now = new Date();
+
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          const session = await tx.attendanceSession.findFirst({
+            where: {
+              tokenHash,
+              isActive: true,
+              expiresAt: { gte: now },
+            },
+            include: { activity: true },
+          });
+
+          if (!session) {
+            throw new Error('TOKEN_EXPIRED_OR_INVALID');
+          }
+
+          const existing = await tx.attendanceRecord.findUnique({
+            where: {
+              uq_user_activity_attendance: {
+                userId,
+                activityId: session.activityId,
+              },
+            },
+          });
+
+          if (existing) {
+            throw new Error('ATTENDANCE_ALREADY_RECORDED');
+          }
+
+          const stampType = session.activity.isWarmup ? 'WARMUP_WORKSHOP' : 'LECTURE';
+
+          const record = await tx.attendanceRecord.create({
+            data: {
+              userId,
+              activityId: session.activityId,
+              sessionId: session.id,
+              stampType,
+              pointsAwarded: 1,
+            },
+          });
+
+          const totalStamps = await tx.attendanceRecord.count({
+            where: { userId },
+          });
+
+          return {
+            record,
+            activity: session.activity,
+            totalStamps,
+            eligibleForDraw: totalStamps >= 7,
+          };
+        });
+
+        await CacheService.del('cache:leaderboard');
+
+        await publishAdminEvent({
+          type: 'STAMP_ADDED',
+          payload: {
+            userId,
+            activityId: result.activity.id,
+            newLevel: result.totalStamps >= 10 ? 'Mestre da SECOMP' : result.totalStamps >= 7 ? 'Adepto' : 'Aprendiz',
+          },
+        });
+
+        return reply.status(200).send({
+          success: true,
+          message: 'Carimbo Computado com Sucesso!',
+          stamp: {
+            activityId: result.activity.id,
+            activityTitle: result.activity.title,
+            pointsAwarded: 1,
+            totalStamps: result.totalStamps,
+            eligibleForDraw: result.eligibleForDraw,
+          },
+        });
+      } catch (err: any) {
+        if (err.message === 'TOKEN_EXPIRED_OR_INVALID') {
+          return reply.status(404).send({
+            error: 'INVALID_TOKEN',
+            message: 'Token expirado ou inválido. Verifique o código exibido na sala.',
+          });
+        }
+        if (err.message === 'ATTENDANCE_ALREADY_RECORDED') {
+          return reply.status(409).send({
+            error: 'DUPLICATE_TOKEN',
+            message: 'Token já utilizado por este usuário para esta atividade.',
+          });
+        }
+
+        request.log.error(err);
+        return reply.status(500).send({
+          error: 'INTERNAL_ERROR',
+          message: 'Falha ao processar validação do carimbo.',
+        });
+      }
+    }
+  );
+
+  /**
    * POST /api/v1/staff/sessions/open
    * Rota administrativa para o Staff abrir uma sessão de presença e gerar token OTT.
    */
   app.post(
     '/staff/sessions/open',
-    { preHandler: [authGuard, roleGuard('STAFF', 'ADMIN')] },
+    { preHandler: [authGuard, roleGuard('ADMIN')] },
     async (request, reply) => {
       const parseResult = OpenAttendanceSessionSchema.safeParse(request.body);
       if (!parseResult.success) {

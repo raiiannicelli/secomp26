@@ -16,7 +16,8 @@
   },
   "include": [
     "backend/src/**/*",
-    "prisma/**/*"
+    "prisma/**/*",
+    "api/**/*"
   ],
   "exclude": [
     "node_modules",

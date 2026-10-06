@@ -1,8 +1,10 @@
 import { StateCreator } from 'zustand';
 
+export type TabType = 'EVENTO' | 'PASSAPORTE' | 'PROGRAMACAO' | 'SHARK_TANK' | 'TALENT_ARENA';
+
 export interface NavigationSlice {
-  activeTab: 'EVENTO' | 'PASSAPORTE' | 'PROGRAMACAO';
-  setActiveTab: (tab: 'EVENTO' | 'PASSAPORTE' | 'PROGRAMACAO') => void;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
   activeDayIndex: number;
   selectedTurn: 'ALL' | 'MORNING' | 'AFTERNOON' | 'NIGHT';
   selectedTheme: 'ALL' | 'TECHNOLOGY' | 'MANAGEMENT' | 'INNOVATION' | 'CAREER';
@@ -11,10 +13,12 @@ export interface NavigationSlice {
   setSelectedTheme: (theme: 'ALL' | 'TECHNOLOGY' | 'MANAGEMENT' | 'INNOVATION' | 'CAREER') => void;
 }
 
-export const getInitialTab = (): 'EVENTO' | 'PASSAPORTE' | 'PROGRAMACAO' => {
+export const getInitialTab = (): TabType => {
   if (typeof window !== 'undefined') {
     if (window.location.hash === '#passaporte') return 'PASSAPORTE';
     if (window.location.hash === '#programacao' || window.location.hash === '#minicursos') return 'PROGRAMACAO';
+    if (window.location.hash === '#shark-tank') return 'SHARK_TANK';
+    if (window.location.hash === '#talent-arena') return 'TALENT_ARENA';
   }
   return 'EVENTO';
 };

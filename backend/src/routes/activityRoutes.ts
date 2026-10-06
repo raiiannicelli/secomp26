@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authGuard, optionalAuthGuard } from '../middlewares/authGuard.js';
 import { QueryActivitiesSchema, PreEnrollmentSchema } from '../schemas/contracts.schema.js';
-import { publishAdminEvent } from '../lib/supabaseAdmin.js';
+import { publishAdminEvent, getSupabaseAdmin } from '../lib/supabaseAdmin.js';
 
 export const activityRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   /**
@@ -190,4 +190,116 @@ export const activityRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
       });
     }
   });
+
+  /**
+   * GET /api/v1/activities/cms/all
+   * Retorna todo o conteúdo público gerenciado do Mini-CMS (Palestrantes, Workshops, Mentores, Parceiros, Fotos, Plataformas)
+   */
+  app.get('/cms/all', async (_request, reply) => {
+    try {
+      if (getSupabaseAdmin()) {
+        try {
+          const { data, error } = await getSupabaseAdmin()!.from('cms_contents').select('*');
+          if (!error && data) {
+            const result: Record<string, any> = {};
+            for (const item of data) {
+              result[item.key] = item.value;
+            }
+            return reply.status(200).send({ success: true, cms: result });
+          }
+        } catch (err) {
+          console.warn('[activityRoutes] Falha Supabase em /cms/all, fallback Prisma:', err);
+        }
+      }
+
+      const contents = await prisma.cmsContent.findMany();
+      const result: Record<string, any> = {};
+      for (const item of contents) {
+        result[item.key] = item.value;
+      }
+      return reply.status(200).send({ success: true, cms: result });
+    } catch {
+      return reply.status(200).send({ success: true, cms: {} });
+    }
+  });
+
+  /**
+   * POST /api/v1/activities/:id/validate
+   * Leitura de QR Code dinâmico do Curso/Palestra/Roda de Conversa (SDD-SPEC 4.0 / PR-30).
+   * Concede +1 carimbo no Passaporte do participante e incrementa allocatedSeats.
+   */
+  app.post(
+    '/:id/validate',
+    { preHandler: [authGuard] },
+    async (request, reply) => {
+      const { id: activityId } = request.params as { id: string };
+      const userId = request.user!.userId;
+
+      const activity = await prisma.activity.findUnique({
+        where: { id: activityId },
+      });
+
+      if (!activity) {
+        return reply.status(404).send({
+          error: 'ACTIVITY_NOT_FOUND',
+          message: 'Atividade não encontrada.',
+        });
+      }
+
+      const existingRecord = await prisma.attendanceRecord.findUnique({
+        where: {
+          uq_user_activity_attendance: {
+            userId,
+            activityId,
+          },
+        },
+      });
+
+      if (existingRecord) {
+        return reply.status(409).send({
+          error: 'ALREADY_STAMPED',
+          message: 'Você já recebeu o carimbo desta atividade.',
+        });
+      }
+
+      const stampType = activity.isWarmup ? 'WARMUP_WORKSHOP' : 'LECTURE';
+
+      const [record, updatedActivity] = await prisma.$transaction([
+        prisma.attendanceRecord.create({
+          data: {
+            userId,
+            activityId,
+            stampType,
+            pointsAwarded: 1,
+          },
+        }),
+        prisma.activity.update({
+          where: { id: activityId },
+          data: {
+            allocatedSeats: { increment: 1 },
+          },
+        }),
+      ]);
+
+      await publishAdminEvent({
+        type: 'STAMP_ADDED',
+        payload: {
+          userId,
+          activityId,
+          activityTitle: activity.title,
+          points: 1,
+          stampType,
+        },
+      });
+
+      return reply.status(200).send({
+        success: true,
+        message: `Presença confirmada em "${activity.title}"! +1 carimbo adicionado ao seu Passaporte Digital.`,
+        recordId: record.id,
+        activityTitle: activity.title,
+        enrolledCount: updatedActivity.allocatedSeats,
+      });
+    }
+  );
 };
+

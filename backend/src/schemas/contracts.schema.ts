@@ -39,7 +39,7 @@ export const RegisterUserSchema = z
       .string()
       .regex(/^\+?[0-9]{10,14}$/, 'Formato de telefone inválido (ex: 41999998888)')
       .optional(),
-    role: z.enum(['STUDENT', 'STAFF', 'ADMIN', 'RECRUITER', 'VISITOR']).default('STUDENT'),
+    role: z.enum(['STUDENT', 'VISITOR', 'ADMIN']).default('STUDENT'),
   })
   .superRefine((data, ctx) => {
     let effectiveEmail = data.email;
@@ -104,8 +104,8 @@ export const ValidateAttendanceTokenSchema = z.object({
   token: z
     .string()
     .min(5)
-    .max(10)
-    .regex(/^SEC-[A-Z0-9]{3,6}$/i, 'Formato de token inválido. Esperado: SEC-XXX'),
+    .max(30)
+    .regex(/^SEC(-[A-Z0-9]{2,10})?-[A-Z0-9]{3,6}$/i, 'Formato de token inválido. Esperado: SEC-XXX ou SEC-CAT-XXX'),
 });
 
 export const OpenAttendanceSessionSchema = z.object({
@@ -125,8 +125,8 @@ export const SharkTankVoteSchema = z.object({
 
 export const TalentBookingSchema = z.object({
   slotId: z.string().uuid('ID de slot inválido'),
-  linkedinUrl: z.string().url('URL do LinkedIn inválida').includes('linkedin.com/'),
-  fieldInterest: z.string().min(2).max(100),
+  linkedinUrl: z.string().optional().default(''),
+  fieldInterest: z.string().optional().default(''),
 });
 
 export const IssueCertificateSchema = z.object({

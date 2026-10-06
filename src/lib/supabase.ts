@@ -67,6 +67,9 @@ export type AdminRealtimeEvent =
   | { type: 'TOKEN_EXPIRED';         payload: { token: string } }
   | { type: 'ENROLLMENT_ADDED';      payload: { userId: string; activityId: string } }
   | { type: 'VOTING_STATUS_CHANGED'; payload: { pitchId: string; isOpen: boolean } }
+  | { type: 'SESSION_STATUS_CHANGED'; payload: { key: string; value: any } }
+  | { type: 'CMS_UPDATED';           payload: { key: string; value: any } }
+  | { type: 'VOTES_RESET';           payload?: Record<string, never> }
   | { type: 'MEDIA_UPLOADED';         payload: { url: string; caption: string } };
 
 export function subscribeToAdminChannel(

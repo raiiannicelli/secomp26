@@ -5,36 +5,26 @@ import {
   useSpring,
   useTransform,
   useMotionValueEvent,
+  useMotionValue,
   AnimatePresence,
   MotionValue,
 } from 'framer-motion';
 import {
-  Mail,
   CheckCircle2,
   Send,
   MapPin,
   MessageSquare,
   X,
-  ShieldCheck,
+  Building,
+  Sparkles,
+  ChevronRight,
 } from 'lucide-react';
+import { useUIStore, isUserAuthenticated } from '../stores/useUIStore';
+import { CMSPartnerItem, CotaType } from '../stores/slices/cmsSlice';
+import { AnimatedAIChat } from './ui/animated-ai-chat';
 
-export type CotaType = 'OURO' | 'PRATA' | 'BRONZE' | 'PARCEIRO' | 'EXPOSITOR';
-
-interface Partner {
-  id: string;
-  name: string;
-  category: string;
-  cota: CotaType;
-  cotaLabel: string;
-  cotaIcon: string;
-  cotaColor: string;
-  badgeColor: string;
-  tagline: string;
-  description: string;
-  benefits: string[];
-  tags: string[];
-  websiteUrl: string;
-}
+export type { CotaType };
+export type Partner = CMSPartnerItem;
 
 // 1. TO Brasil Logo
 const ToBrasilLogo: React.FC<{ className?: string }> = ({ className = "h-20" }) => (
@@ -177,7 +167,7 @@ const SebraePrLogo: React.FC<{ className?: string }> = ({ className = "h-20" }) 
     </defs>
     <g transform="translate(12, 16)">
       <polygon points="12,46 36,12 48,27 24,58" fill="url(#sebrae-grad)" />
-      <polygon points="36,12 62,12 74,27 48,27" fill="#fcd535" />
+      <polygon points="36,12 62,12t 74,27 48,27" fill="#fcd535" />
       <polygon points="48,27 74,27 62,46 36,46" fill="#0ecb81" />
       <polygon points="24,58 48,27 62,46 38,58" fill="#0ecb81" />
     </g>
@@ -210,6 +200,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Analytics Corporativo', 'Engenharia de Dados', 'Minicursos Práticos'],
     websiteUrl: 'https://www.tobrasil.com.br',
+    orderIndex: 0,
   },
   {
     id: 'forlogic',
@@ -230,6 +221,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Qualidade de Software', 'Recrutamento Ativo', 'SaaS de Alta Escala'],
     websiteUrl: 'https://forlogic.net',
+    orderIndex: 1,
   },
   {
     id: 'tcs',
@@ -250,6 +242,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Carreira Global Big Tech', 'Cloud Solutions', 'Estágio Internacional'],
     websiteUrl: 'https://www.tcs.com',
+    orderIndex: 2,
   },
   {
     id: 'cyberguard',
@@ -270,6 +263,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Red Team & Defesa', 'Infraestrutura Crítica', 'Bancadas Práticas'],
     websiteUrl: 'https://cyberguard.security',
+    orderIndex: 3,
   },
   {
     id: 'incubadora-sprint',
@@ -290,6 +284,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Incubação de Startups', 'Mentoria Ideathon', 'Aceleração UTFPR'],
     websiteUrl: 'https://sprint.utfpr.edu.br',
+    orderIndex: 4,
   },
   {
     id: 'sebrae-pr',
@@ -310,6 +305,7 @@ export const partners: Partner[] = [
     ],
     tags: ['Banca Shark Tank', 'Consultoria Empresarial', 'Fomento a Projetos'],
     websiteUrl: 'https://sebraepr.com.br',
+    orderIndex: 5,
   },
 ];
 
@@ -338,7 +334,6 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Escuta eventos diretos de rolagem de tela para ativação reativa
     let isUserScrolling = false;
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -354,7 +349,6 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
     window.addEventListener('wheel', onUserScroll, { passive: true });
     window.addEventListener('touchmove', onUserScroll, { passive: true });
 
-    // Feixes suaves de luz / partículas do túnel (opacidade reduzida para conforto visual)
     const numStreaks = 75;
     interface Streak {
       angle: number;
@@ -380,20 +374,17 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
     }
 
     let prevStep = scrollStep.get();
-    let scrollActivity = 0; // 0 = inativo (parado), 1 = ativo (rolando)
+    let scrollActivity = 0;
 
     const render = () => {
-      // Amostragem da variação do scrollStep
       const currentStepVal = scrollStep.get();
       const stepDiff = Math.abs(currentStepVal - prevStep);
       prevStep = currentStepVal;
 
-      // O efeito só ativa quando houver scroll ativo ou movimento de tela
       const isMoving = stepDiff > 0.0003 || isUserScrolling;
       const targetActivity = isMoving ? 1 : 0;
       scrollActivity = scrollActivity * 0.88 + targetActivity * 0.12;
 
-      // Se completamente parado e quase 0, limpa e economiza processamento
       if (scrollActivity < 0.008) {
         ctx.clearRect(0, 0, width, height);
         animId = requestAnimationFrame(render);
@@ -407,7 +398,6 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
 
       const warpSpeed = Math.max(1, stepDiff * 90) * scrollActivity;
 
-      // 1. Feixes de Luz Suaves / Raios de Sucção do Túnel (Warp Streamlines)
       streaks.forEach((streak) => {
         streak.dist += streak.speed * warpSpeed;
         streak.angle += streak.swirl * warpSpeed;
@@ -429,7 +419,6 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
         const x1 = cx + cosA * r1;
         const y1 = cy + sinA * r1;
 
-        // Opacidade atenuada e suave para não cansar a vista
         const dynamicAlpha = Math.min(
           0.07,
           streak.alpha * Math.sin(streak.dist * Math.PI) * scrollActivity
@@ -437,7 +426,7 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
 
         const grad = ctx.createLinearGradient(x0, y0, x1, y1);
         grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        grad.addColorStop(1, `rgba(255, 255, 255, ${dynamicAlpha.toFixed(3)})`);
+        grad.addColorStop(1, `rgba(0, 225, 255, ${dynamicAlpha.toFixed(3)})`);
 
         ctx.beginPath();
         ctx.moveTo(x0, y0);
@@ -447,12 +436,11 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
         ctx.stroke();
       });
 
-      // 2. Brilho do Vórtice Central Suave e Acolhedor (sem ofuscamento)
       const centralAlpha = Math.min(0.04, 0.04 * scrollActivity);
       const centralGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 180);
-      centralGlow.addColorStop(0, `rgba(255, 255, 255, ${centralAlpha.toFixed(3)})`);
-      centralGlow.addColorStop(0.4, `rgba(255, 255, 255, ${(centralAlpha * 0.25).toFixed(3)})`);
-      centralGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      centralGlow.addColorStop(0, `rgba(0, 225, 255, ${centralAlpha.toFixed(3)})`);
+      centralGlow.addColorStop(0.4, `rgba(0, 225, 255, ${(centralAlpha * 0.25).toFixed(3)})`);
+      centralGlow.addColorStop(1, 'rgba(0, 225, 255, 0)');
       ctx.fillStyle = centralGlow;
       ctx.beginPath();
       ctx.arc(cx, cy, 180, 0, Math.PI * 2);
@@ -481,6 +469,7 @@ const WarpTunnelCanvas: React.FC<WarpTunnelCanvasProps> = ({ scrollStep }) => {
   );
 };
 
+// Componente de Projeção em Profundidade 3D dos Banners no Túnel Holográfico
 interface TunnelLogo3DProps {
   partner: Partner;
   index: number;
@@ -498,38 +487,30 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
   onOpenModal,
   renderLogo,
 }) => {
-  // Projeção em Profundidade 3D ao longo do Eixo Z (Túnel Sci-Fi)
+  // Projeção 3D ao longo do Eixo Z (Túnel Sci-Fi)
   const transform = useTransform(currentStep, (cur) => {
     const delta = index - cur;
 
     if (delta >= 0) {
-      // Logos que estão se aproximando do fundo do túnel
-      // Z negativo recua no espaço do túnel
       const z = -delta * 650;
-      // Leve desvio vertical para efeito de profundidade dinâmica no túnel
       const y = Math.sin(delta * 1.2) * 15;
       return `translate3d(0, ${y.toFixed(2)}px, ${z.toFixed(2)}px)`;
     } else {
-      // Logos que ultrapassaram a câmera (voam para frente e fora da tela)
       const z = -delta * 380;
       const y = -delta * 20;
       return `translate3d(0, ${y.toFixed(2)}px, ${z.toFixed(2)}px)`;
     }
   });
 
-  // Escala: O logo atinge exatamente 2.0x no ponto focal do scroll (delta = 0)
   const scale = useTransform(currentStep, (cur) => {
     const delta = index - cur;
     if (delta >= 0) {
-      // No centro (delta = 0) = 2.0x; no fundo do túnel (delta >= 2.5) diminui suavemente
       return Math.max(0.25, 2.0 - delta * 0.9);
     } else {
-      // Quando ultrapassa a câmera, expande como se passasse ao lado do espectador
       return 2.0 + Math.abs(delta) * 0.9;
     }
   });
 
-  // Opacidade com névoa volumétrica no túnel
   const opacity = useTransform(currentStep, (cur) => {
     const delta = index - cur;
     if (delta > 2.2) return 0;
@@ -537,12 +518,10 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
       if (delta < 0.3) return 1;
       return Math.max(0.1, 1 - delta * 0.45);
     } else {
-      // Desvanece rapidamente ao passar para trás da câmera
       return Math.max(0, 1 - Math.abs(delta) * 1.8);
     }
   });
 
-  // Destaque de luminosidade no túnel sem desfoques difusos
   const filter = useTransform(currentStep, (cur) => {
     const delta = Math.abs(index - cur);
     const brightness = Math.max(0.3, 1 - delta * 0.35);
@@ -568,7 +547,6 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
       }}
       className="select-none flex flex-col items-center justify-center p-4 pointer-events-none"
     >
-      {/* Container Interativo do Logo Suspenso no Túnel */}
       <div
         role="button"
         tabIndex={isActive ? 0 : -1}
@@ -583,7 +561,6 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
         className={`relative flex flex-col items-center justify-center transition-transform duration-300 ${isActive ? 'pointer-events-auto cursor-pointer group hover:scale-105 focus:outline-none' : ''
           }`}
       >
-        {/* Flutuação Vertical do Logo Suspenso no Túnel */}
         <motion.div
           animate={{
             y: isActive ? [0, -10, 0] : [0, -3, 0],
@@ -595,16 +572,15 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
           }}
           className="relative flex flex-col items-center justify-center"
         >
-          {/* Projeção do Logo: 100% suspenso, nítido e sem clarão excessivo */}
           <div
             className={`transition-all duration-200 flex items-center justify-center ${isActive
-              ? 'opacity-100'
+              ? 'opacity-100 drop-shadow-[0_0_30px_rgba(0,225,255,0.85)]'
               : 'grayscale opacity-40'
               }`}
           >
             {renderLogo(
               partner.id,
-              'w-72 sm:w-96 md:w-[480px] h-20 sm:h-28 md:h-32 object-contain pointer-events-none'
+              'w-52 sm:w-80 md:w-[480px] h-16 sm:h-24 md:h-32 object-contain pointer-events-none'
             )}
           </div>
         </motion.div>
@@ -613,93 +589,485 @@ const TunnelLogo3D: React.FC<TunnelLogo3DProps> = ({
   );
 };
 
-export const SponsorsMediaKitSection: React.FC = () => {
+interface SpaceshipFlybyProps {
+  progress: MotionValue<number>;
+  onExplode?: () => void;
+}
+
+export const SpaceshipFlyby: React.FC<SpaceshipFlybyProps> = ({ progress }) => {
+  // Trajetória cinemática com mergulho 3D e colisão direta na TELA DO USUÁRIO
+  const shipX = useTransform(
+    progress,
+    [0, 0.1, 0.2, 0.25, 0.28],
+    ['48vw', '18vw', '-4vw', '-1vw', '0vw']
+  );
+
+  const shipY = useTransform(
+    progress,
+    [0, 0.1, 0.2, 0.25, 0.28],
+    ['30vh', '-6vh', '-10vh', '-2vh', '0vh']
+  );
+
+  // Aumenta drasticamente de tamanho no eixo Z vindo em direção à lente da tela do usuário
+  const shipScale = useTransform(
+    progress,
+    [0, 0.1, 0.2, 0.26, 0.28],
+    [0.4, 1.2, 2.8, 5.5, 8.5]
+  );
+
+  const shipOpacity = useTransform(
+    progress,
+    [0, 0.03, 0.25, 0.27, 0.28],
+    [0, 1, 1, 1, 0]
+  );
+
+  // Tremor e inclinação de colisão física ao se chocar contra o vidro da tela
+  const shipRotateZ = useTransform(
+    progress,
+    [0, 0.1, 0.2, 0.25, 0.27, 0.28],
+    [-18, -6, 14, -28, 35, 0]
+  );
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-center justify-center">
+      <motion.div
+        style={{
+          x: shipX,
+          y: shipY,
+          scale: shipScale,
+          rotateZ: shipRotateZ,
+          opacity: shipOpacity,
+          perspective: 1400,
+          transformStyle: 'preserve-3d',
+        }}
+        className="relative w-[280px] sm:w-[360px] md:w-[440px] lg:w-[500px] flex items-center justify-center"
+      >
+        {/* Propulsor e aura de impacto iminente na tela */}
+        <motion.div
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.8, 1, 0.8],
+          }}
+          transition={{
+            duration: 1.0,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-56 h-56 bg-gradient-to-t from-cyan-400 via-amber-400 to-transparent rounded-full blur-3xl pointer-events-none"
+        />
+
+        <img
+          src="/spaceship.png?v=20260925"
+          alt="Espaçonave 3D Cósmica"
+          className="w-full h-auto object-contain select-none drop-shadow-[0_30px_70px_rgba(0,225,255,0.8)] filter contrast-125 brightness-115"
+          draggable={false}
+        />
+      </motion.div>
+    </div>
+  );
+};
+
+// Componente da Cortina de Fumaça Volumétrica pós-colisão
+const SmokeCurtainEffect: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <AnimatePresence>
+      {active && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+          className="absolute inset-0 pointer-events-none z-35 flex items-center justify-center overflow-hidden"
+        >
+          {/* Cortina volumétrica central de fumaça preenchendo o palco */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 120 }}
+            animate={{ scale: [0.8, 1.6, 2.4], opacity: [0, 0.95, 0.8, 0], y: [120, 0, -60] }}
+            transition={{ duration: 1.3, ease: 'easeOut' }}
+            className="absolute inset-0 bg-gradient-to-t from-[#05070a] via-[#161c24]/90 to-transparent blur-3xl backdrop-blur-md"
+          />
+
+          {/* Cortina de Fumaça vindo da esquerda */}
+          <motion.div
+            initial={{ x: '-80%', opacity: 0 }}
+            animate={{ x: ['-80%', '0%', '30%'], opacity: [0, 0.9, 0] }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
+            className="absolute top-0 bottom-0 left-0 w-4/5 bg-[#121820]/90 blur-3xl rounded-r-full"
+          />
+
+          {/* Cortina de Fumaça vindo da direita */}
+          <motion.div
+            initial={{ x: '80%', opacity: 0 }}
+            animate={{ x: ['80%', '0%', '-30%'], opacity: [0, 0.9, 0] }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
+            className="absolute top-0 bottom-0 right-0 w-4/5 bg-[#171f2a]/90 blur-3xl rounded-l-full"
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Componente do Efeito de Impacto Direto na Tela (Trincado de Vidro + Estilhaços + Explosão Cinemática)
+const ExplosionEffect: React.FC<{ active: boolean }> = ({ active }) => {
+  return (
+    <AnimatePresence>
+      {active && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          animate={{
+            opacity: 1,
+            x: [-28, 28, -20, 20, -12, 12, -6, 6, 0],
+            y: [-24, 24, -18, 18, -10, 10, -4, 4, 0],
+          }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden"
+        >
+          {/* 1. Flash de Impacto Direto na Lente da Tela */}
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="absolute inset-0 bg-gradient-to-r from-amber-100 via-white to-red-600 z-50 mix-blend-screen"
+          />
+
+          {/* 2. VIDRO TRINCADO DA TELA DO USUÁRIO (Glass Crack Impact Lines) */}
+          <motion.div
+            initial={{ scale: 0.2, opacity: 1 }}
+            animate={{ scale: [0.2, 1.3, 1.8], opacity: [1, 0.9, 0] }}
+            transition={{ duration: 0.85, ease: 'easeOut' }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-45"
+          >
+            <svg viewBox="0 0 800 600" className="w-full h-full stroke-cyan-300 drop-shadow-[0_0_15px_#00f0ff] opacity-90">
+              {/* Linhas de fratura em rede da tela trincada */}
+              <g strokeWidth="2.5" strokeLinecap="round" fill="none">
+                <path d="M 400 300 L 150 50 M 400 300 L 650 80 M 400 300 L 720 420 M 400 300 L 80 520 M 400 300 L 380 580 M 400 300 L 580 550 M 400 300 L 50 250 M 400 300 L 750 200" />
+                <path d="M 320 220 L 480 200 L 520 360 L 300 380 Z" strokeWidth="1.5" strokeDasharray="4 4" />
+                <path d="M 220 150 L 580 130 L 620 480 L 180 460 Z" strokeWidth="1" strokeDasharray="6 6" />
+              </g>
+            </svg>
+          </motion.div>
+
+          {/* 3. Bola de Fogo Principal Cinemática (Fireball Core) */}
+          <motion.div
+            initial={{ scale: 0.1, opacity: 1 }}
+            animate={{ scale: [0.1, 4.8, 6.2], opacity: [1, 0.95, 0] }}
+            transition={{ duration: 0.88, ease: 'easeOut' }}
+            className="absolute w-80 h-80 rounded-full bg-gradient-to-r from-yellow-200 via-orange-500 to-red-700 blur-sm shadow-[0_0_140px_#ff4500] mix-blend-screen"
+          />
+
+          {/* 4. Núcleo Secundário de Calor Extremo (White Hot Core) */}
+          <motion.div
+            initial={{ scale: 0.1, opacity: 1 }}
+            animate={{ scale: 3.2, opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="absolute w-56 h-56 rounded-full bg-gradient-to-r from-white via-amber-300 to-orange-500 shadow-[0_0_100px_#ffffff]"
+          />
+
+          {/* 5. Nuvem de Fumaça Escura Volumétrica */}
+          <motion.div
+            initial={{ scale: 0.2, opacity: 0.95 }}
+            animate={{ scale: 6.5, opacity: 0 }}
+            transition={{ duration: 1.0, ease: 'easeOut' }}
+            className="absolute w-96 h-96 rounded-full bg-[#160d0b]/85 blur-2xl mix-blend-multiply"
+          />
+
+          {/* 6. Onda de Choque Blast Wave Concentrada */}
+          <motion.div
+            initial={{ scale: 0.1, opacity: 1, borderWidth: '32px' }}
+            animate={{ scale: 5.8, opacity: 0, borderWidth: '1px' }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute w-80 h-80 rounded-full border-orange-500 shadow-[0_0_120px_#ff6600]"
+          />
+
+          {/* 7. Estilhaços de Vidro Translucidos Flying Outward */}
+          {Array.from({ length: 30 }).map((_, i) => {
+            const angle = (i / 30) * Math.PI * 2;
+            const distance = 300 + Math.random() * 400;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+
+            return (
+              <motion.div
+                key={`glass-${i}`}
+                initial={{ x: 0, y: 0, scale: 2.0, opacity: 1, rotate: 0 }}
+                animate={{
+                  x: tx,
+                  y: ty,
+                  scale: 0,
+                  opacity: 0,
+                  rotate: Math.random() * 1080,
+                }}
+                transition={{
+                  duration: 0.7 + Math.random() * 0.4,
+                  ease: 'easeOut',
+                }}
+                className="absolute w-4 h-6 bg-cyan-200/60 border border-white/80 backdrop-blur-sm shadow-[0_0_15px_#00f0ff] transform rotate-45"
+              />
+            );
+          })}
+
+          {/* 8. Fragmentos da Nave / Brasas e Estilhaços Incandescentes */}
+          {Array.from({ length: 50 }).map((_, i) => {
+            const angle = (i / 50) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            const distance = 320 + Math.random() * 420;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            const isRed = i % 3 === 0;
+            const isYellow = i % 3 === 1;
+
+            return (
+              <motion.div
+                key={`ember-${i}`}
+                initial={{ x: 0, y: 0, scale: 2.4, opacity: 1, rotate: 0 }}
+                animate={{
+                  x: tx,
+                  y: ty,
+                  scale: 0,
+                  opacity: 0,
+                  rotate: Math.random() * 720,
+                }}
+                transition={{
+                  duration: 0.6 + Math.random() * 0.45,
+                  ease: 'easeOut',
+                }}
+                className={`absolute rounded-sm ${isRed
+                  ? 'w-4 h-4 bg-red-600 shadow-[0_0_25px_#ff0000]'
+                  : isYellow
+                    ? 'w-3 h-3 bg-yellow-400 shadow-[0_0_25px_#ffea00]'
+                    : 'w-3.5 h-3.5 bg-orange-500 shadow-[0_0_25px_#ff6600]'
+                  }`}
+              />
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Componente de Palco Central Industrial de Destaque com Carrossel Plano Elegante
+interface PartnersRunway3DStageProps {
+  partners: Partner[];
+  renderLogo: (partnerId: string, className?: string) => React.ReactNode;
+  onOpenModal: (partner: Partner) => void;
+}
+
+const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
+  partners,
+  renderLogo,
+  onOpenModal,
+}) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [selectedPartnerForModal, setSelectedPartnerForModal] = useState<Partner | null>(null);
+  const basePartners = React.useMemo(() => {
+    return Array.from(new Map(partners.map((p) => [p.id, p])).values());
+  }, [partners]);
+
+  const currentPartner = basePartners[activeIndex] || basePartners[0];
+
+  // Alternância automática de 3 segundos por parceiro (TV, monitor, tablet e celular)
+  const [isPaused, setIsPaused] = useState(false);
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % basePartners.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isPaused, basePartners.length]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.5 }}
+      className="absolute inset-0 flex flex-col justify-between overflow-hidden select-none p-4 sm:p-6"
+    >
+      {/* 1. IMAGEM DE FUNDO DA SALA DA NAVE (/image.png) */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/image.png?v=20260925"
+          alt="Ponte de Comando SECOMP"
+          className="w-full h-full object-cover object-center filter brightness-75 contrast-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07090c]/90 via-[#07090c]/75 to-[#07090c]/95" />
+      </div>
+
+      {/* 2. Header Limpo Executivo */}
+      <div className="w-full max-w-7xl mx-auto z-20 flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+        <div>
+          <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight uppercase">
+            Parceiros <span className="text-[#fcd535]">Oficiais</span>
+          </h2>
+          <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono text-[#fcd535]">
+            ECOSSISTEMA DE INOVAÇÃO
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : basePartners.length - 1))}
+              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] hover:border-[#fcd535] text-white flex items-center justify-center transition-colors"
+              aria-label="Anterior"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <button
+              onClick={() => setActiveIndex((prev) => (prev < basePartners.length - 1 ? prev + 1 : 0))}
+              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] hover:border-[#fcd535] text-white flex items-center justify-center transition-colors"
+              aria-label="Próximo"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. PALCO CENTRAL DE DESTAQUE PREMIUM (DESIGN INDUSTRIAL PLANO E NÍTIDO) */}
+      <div
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        className="relative w-full mx-auto my-auto z-20"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPartner.id}
+            initial={{ opacity: 0, y: 15, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.97 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="flex flex-col justify-center items-center sm:p-10 flex flex-col md:flex-row items-center relative overflow-hidden"
+          >
+
+            {/* Container da Logo com Fundo Escuro Sólido Limpo */}
+            <div className="w-full md:w-1/2 flex items-center justify-center p-6 rounded-2xl shadow-inner shrink-0 min-h-[180px] sm:min-h-[220px]">
+              {renderLogo(
+                currentPartner.id,
+                'w-full max-h-28 object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* 4. BARRA ORBITAL DE MINIATURAS E SELEÇÃO RÁPIDA (CARROSSEL PLANO) */}
+      <div className="w-full max-w-5xl mx-auto z-20 pb-2">
+        <div className="flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 no-scrollbar">
+          {basePartners.map((partner, idx) => {
+            const isSelected = activeIndex === idx;
+            return (
+              <button
+                key={partner.id}
+              >
+                <div className="w-20 h-20 flex items-center justify-center pointer-events-none">
+                  {renderLogo(partner.id, 'max-h-15 max-w-full object-contain')}
+                </div>
+
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export const SponsorsMediaKitSection: React.FC = () => {
+  const partners = useUIStore((state) => state.partners);
+  const user = useUIStore((state) => state.user);
+  const authenticated = isUserAuthenticated(user);
+
+  const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Form states
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('Dúvida Geral');
-  const [message, setMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  // FAQ state
+  const [activeFaqId, setActiveFaqId] = useState<string>('faq-cotas');
 
-  // Framer Motion useScroll atrelado ao container estendido do Túnel 3D
+  // Framer Motion useScroll atrelado ao container estendido
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
-  // Mapeia 1 scroll = 1 logotipo com platôs firmes, mantendo fixo até o último parceiro
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 200,
+    damping: 25,
+    mass: 0.5,
+  });
+
+  // A nave voa até scroll 0.45. Ao exceder esse limite (0.45+), o usuário entra na nave/sala sci-fi com os banners parceiros
+  const isInsideShip = useTransform(smoothProgress, (v) => v >= 0.45);
+  const [hasEnteredShip, setHasEnteredShip] = useState(false);
+
+  useMotionValueEvent(smoothProgress, 'change', (v) => {
+    if (v >= 0.45 && !hasEnteredShip) {
+      setHasEnteredShip(true);
+    } else if (v < 0.35 && hasEnteredShip) {
+      setHasEnteredShip(false);
+    }
+  });
+
+  // Mapeia o progresso do scroll (de 0.45 até 1.0) para navegar suavemente por cada parceiro
   const targetStep = useTransform(
-    scrollYProgress,
-    [0, 0.04, 0.14, 0.20, 0.30, 0.36, 0.46, 0.52, 0.62, 0.68, 0.78, 0.84, 0.98, 1.0],
-    [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5]
+    smoothProgress,
+    [0.45, 1],
+    [0, Math.max(0, partners.length - 1)]
   );
 
-  // Mola física responsiva (criticamente amortecida) para o movimento suave do túnel
   const smoothStep = useSpring(targetStep, {
     stiffness: 240,
     damping: 28,
     mass: 0.5,
   });
 
-  // Sincroniza o parceiro ativo de 1 em 1
   useMotionValueEvent(smoothStep, 'change', (val) => {
+    if (!hasEnteredShip) return;
     const nextIdx = Math.min(partners.length - 1, Math.max(0, Math.round(val)));
     if (nextIdx !== activeIndex) {
       setActiveIndex(nextIdx);
     }
   });
 
-  // Pontos de ancoragem para salto suave nos dots
-  const stagePlateaus = [0.04, 0.22, 0.38, 0.54, 0.70, 0.90];
-
   const handleSelectPartner = (idx: number) => {
-    const el = containerRef.current;
-    if (!el) {
-      setActiveIndex(idx);
-      return;
-    }
-    const startY = el.offsetTop;
-    const totalScrollable = el.offsetHeight - window.innerHeight;
-    const targetY = startY + stagePlateaus[idx] * totalScrollable;
-    window.scrollTo({ top: targetY, behavior: 'smooth' });
+    if (!hasEnteredShip) setHasEnteredShip(true);
     setActiveIndex(idx);
   };
 
-  // Suporte a teclado (Esc para fechar modal, Setas para avançar parceiro)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedPartnerForModal) {
-        setSelectedPartnerForModal(null);
-        return;
-      }
-
-      if (!selectedPartnerForModal) {
-        const el = containerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= window.innerHeight && rect.bottom >= 0) {
-          if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            const prev = activeIndex > 0 ? activeIndex - 1 : partners.length - 1;
-            handleSelectPartner(prev);
-          }
-          if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            const next = activeIndex < partners.length - 1 ? activeIndex + 1 : 0;
-            handleSelectPartner(next);
-          }
+      if (hasEnteredShip) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prev = activeIndex > 0 ? activeIndex - 1 : partners.length - 1;
+          handleSelectPartner(prev);
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = activeIndex < partners.length - 1 ? activeIndex + 1 : 0;
+          handleSelectPartner(next);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex, selectedPartnerForModal]);
+  }, [activeIndex, partners.length, hasEnteredShip]);
 
   const renderLogo = (partnerId: string, className?: string) => {
+    const customPartner = partners.find((p) => p.id === partnerId);
+    if (customPartner?.logoUrl) {
+      return (
+        <div className={`${className || 'h-20'} flex items-center justify-center p-2`}>
+          <img
+            src={customPartner.logoUrl}
+            alt={customPartner.name}
+            className="max-h-20 max-w-[280px] w-auto h-auto object-contain"
+          />
+        </div>
+      );
+    }
+
     switch (partnerId) {
       case 'to-brasil':
         return <ToBrasilLogo className={className} />;
@@ -713,316 +1081,234 @@ export const SponsorsMediaKitSection: React.FC = () => {
         return <SprintUtfprLogo className={className} />;
       case 'sebrae-pr':
         return <SebraePrLogo className={className} />;
-      default:
-        return null;
+      default: {
+        return (
+          <div className={`${className || 'h-20'} flex items-center justify-center gap-3 px-6 py-3 rounded-2xl bg-[#181a20] border border-[#2b3139]`}>
+            <Building className="w-8 h-8 text-[#fcd535]" />
+            <div className="text-left">
+              <div className="text-xl font-black text-white uppercase tracking-wider">{customPartner?.name || 'PARCEIRO'}</div>
+              <div className="text-[10px] font-mono text-[#fcd535] uppercase">{customPartner?.category || 'PATROCINADOR'}</div>
+            </div>
+          </div>
+        );
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !message) return;
-
-    setSubmitted(true);
-    setName('');
-    setEmail('');
-    setMessage('');
-    setTimeout(() => setSubmitted(false), 6000);
-  };
-
-  const currentPartner = partners[activeIndex];
+  const currentPartner = partners[activeIndex] || partners[0];
 
   return (
-    <section id="patrocinadores" className="relative bg-[#0b0e11] w-full">
-      {/* ══ TRACK ESTENDIDO DE SCROLL EM TÚNEL (520vh) ══ */}
+    <section id="patrocinadores" className="relative w-full bg-[#07090c] text-white">
+      {/* ══ TRACK ESTENDIDO DE SCROLL ══ */}
       <div
         ref={containerRef}
-        className="relative w-full pt-4"
-        style={{ height: '520vh' }}
+        className="relative w-full pt-4 h-[220vh] sm:h-[350vh]"
       >
-        {/* Sticky Shell: Ancorado no topo abaixo da Navbar (top-16) até o último parceiro */}
-        <div className="sticky top-16 h-[calc(100vh-4rem)] w-full flex flex-col justify-between py-3 sm:py-5 overflow-hidden bg-[#0b0e11]">
-          {/* Header da Seção Integrado & Clean */}
-          <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 shrink-0 text-center space-y-1.5 z-20">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
-              Parceiros Oficiais
-            </h2>
-            <p className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-[#fcd535]">
-              {currentPartner?.cotaLabel}
-            </p>
-          </div>
+        {/* Sticky Shell: Mantém o palco visível enquanto o usuário navega */}
+        <div className="sticky top-16 h-[calc(100vh-4rem)] w-full flex flex-col justify-between py-3 sm:py-5 overflow-hidden bg-[#07090c]">
 
-          {/* ══ PALCO DO TÚNEL 3D EM PROFUNDIDADE (EIXO Z) ══ */}
-          <div
-            className="relative w-full flex-grow flex items-center justify-center my-auto overflow-hidden"
-            style={{
-              perspective: '1000px',
-              perspectiveOrigin: '50% 50%',
-            }}
-          >
-            {/* Warp Tunnel Canvas Dinâmico 60fps — Efeito de Sucção/Puxando no Túnel */}
-            <WarpTunnelCanvas scrollStep={smoothStep} />
+          {/* ══ FASE 1: NAVE VOANDO ATÉ EXCEDER A TELA ══ */}
+          <AnimatePresence>
+            {!hasEnteredShip && (
+              <motion.div
+                key="flyby-stage"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 flex flex-col items-center justify-between pointer-events-none z-10"
+              >
+                {/* Warp Tunnel Canvas de Fundo */}
+                <WarpTunnelCanvas scrollStep={smoothProgress} />
 
-            {/* Linhas Laser do Horizonte do Túnel */}
-            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-20" />
-            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-20" />
+                {/* Header durante o voo da nave */}
+                <div className="w-full max-w-4xl mx-auto px-4 text-center space-y-2 pt-4 sm:pt-6 z-20">
+                  <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                    Estação Espacial
+                  </h2>
+                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full text-[#fcd535] uppercase tracking-widest">
+                    Navegação SECOMP 2026
+                  </span>
+                </div>
 
-            {/* Container onde os logos viajam em Profundidade no Eixo Z */}
-            <div
-              className="relative w-full h-[380px] sm:h-[450px] md:h-[480px] flex items-center justify-center overflow-visible"
-              style={{
-                transformStyle: 'preserve-3d',
-              }}
-            >
-              {partners.map((partner, index) => (
-                <TunnelLogo3D
-                  key={partner.id}
-                  partner={partner}
-                  index={index}
-                  currentStep={smoothStep}
-                  isActive={activeIndex === index}
-                  onOpenModal={(p) => setSelectedPartnerForModal(p)}
-                  renderLogo={renderLogo}
-                />
-              ))}
-            </div>
-          </div>
+                {/* Trajetória da Nave Espacial */}
+                <SpaceshipFlyby progress={smoothProgress} />
 
-          {/* ══ INDICADOR MINIMALISTA DE PROGRESSO 1 A 1 & COTAS (SEM CARDS) ══ */}
-          <div className="w-full max-w-xl mx-auto px-4 shrink-0 relative z-30 pb-3 text-center space-y-2">
-            <div className="flex items-center justify-center gap-2.5 flex-wrap">
-              <span className="text-xs font-mono font-bold text-[#fcd535] uppercase tracking-wider">
-                {currentPartner.cotaLabel}
-              </span>
-              <span className="text-[#2b3139]">•</span>
-              <span className="text-xs font-mono font-bold text-white">
-                {currentPartner.name}
-              </span>
-              <span className="text-[#2b3139]">•</span>
-              <span className="text-[11px] font-mono text-[#fcd535] font-bold">
-                0{activeIndex + 1}/06
-              </span>
-            </div>
+                {/* Indicador Flutuante Único de Mouse com Seta Animada */}
+                <div className="shrink-0 flex justify-center items-center pb-2 z-30 pointer-events-none">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[#fcd535] text-xs font-mono">
+                    <motion.div
+                      animate={{ y: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                      className="flex items-center gap-2"
+                    >
+                      {/* Ícone de Mouse Ilustrando Rolagem */}
+                      <svg className="w-4 h-4 text-[#fcd535]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="5" y="2" width="14" height="20" rx="7" />
+                        <path d="M12 6v4" />
+                      </svg>
+                      {/* Seta animada indicando descida / navegação até o final */}
+                      <motion.div
+                        animate={{ y: [0, 3, 0], opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        <svg className="w-3.5 h-3.5 text-[#fcd535]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 5v14" />
+                          <path d="m19 12-7 7-7-7" />
+                        </svg>
+                      </motion.div>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Trilha de Navegação por Dots 1 a 1 */}
-            <div className="flex items-center justify-center gap-2">
-              {partners.map((p, idx) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => handleSelectPartner(idx)}
-                  aria-label={`Ir para ${p.name}`}
-                  className={`transition-all duration-300 rounded-full ${activeIndex === idx
-                    ? 'w-8 h-2 bg-[#fcd535]'
-                    : 'w-2 h-2 bg-[#2b3139] hover:bg-[#707a8a]'
-                    }`}
-                />
-              ))}
-            </div>
-          </div>
+          {/* ══ FASE 2: ENTRADA NA NAVE / ESTAÇÃO SPATIAL + ESTEIRA 3D EM LOOPING CONTINUO DE PARCEIROS (ESTILO MENTORES) ══ */}
+          <AnimatePresence>
+            {hasEnteredShip && (
+              <PartnersRunway3DStage
+                partners={partners}
+                renderLogo={renderLogo}
+                onOpenModal={(partner) => {
+                  // Pode abrir detalhes se desejado
+                }}
+              />
+            )}
+          </AnimatePresence>
+
         </div>
       </div>
 
-      {/* ══ CARD FLUTUANTE ACESSÍVEL (MODAL DE COTA VIA CLIQUE) ══ */}
-      <AnimatePresence>
-        {selectedPartnerForModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedPartnerForModal(null)}
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 sm:p-6"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 8 }}
-              transition={{ duration: 0.15 }}
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Detalhes de ${selectedPartnerForModal.name}`}
-              className="relative w-full max-w-lg rounded-2xl bg-[#1e2329] border border-[#2b3139] p-6 sm:p-8 space-y-6"
-            >
-              {/* Top Bar com Botão Fechar */}
-              <div className="flex items-center justify-between border-b border-[#2b3139] pb-3">
-                <span className="text-xs font-mono text-[#707a8a] uppercase tracking-wider">
-                  Detalhes do Parceiro
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPartnerForModal(null)}
-                  aria-label="Fechar detalhes"
-                  className="p-1.5 rounded-lg text-[#707a8a] hover:text-white hover:bg-[#2b3139] transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* No meio do card: Título (Nome), Subtítulo (Stack) e Descrição única em 1 bloco de texto */}
-              <div className="space-y-3 py-1">
-                <div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                    {selectedPartnerForModal.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm font-mono text-[#fcd535] font-semibold mt-1">
-                    {selectedPartnerForModal.category} • {selectedPartnerForModal.tagline}
-                  </p>
-                </div>
-
-                <p className="text-sm text-[#eaecef] leading-relaxed pt-1">
-                  {selectedPartnerForModal.description}
-                </p>
-              </div>
-
-              {/* No lugar dos botões: Cota e Patrocinador Certificado */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#2b3139]">
-                <span className="text-xs font-mono font-bold text-[#fcd535] uppercase tracking-wider">
-                  {selectedPartnerForModal.cotaLabel}
-                </span>
-                <span className="text-xs font-mono text-[#0ecb81] flex items-center gap-1.5 font-semibold">
-                  <ShieldCheck className="w-4 h-4 text-[#0ecb81]" />
-                  Patrocinador Certificado
-                </span>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ══ CANAL DE ATENDIMENTO E SUPORTE SECOMP ══ */}
-      <div className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 bg-[#0b0e11] border-t border-[#2b3139]/40">
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* ══ CANAL DE ATENDIMENTO E SUPORTE SECOMP (ANIMATED AI CHAT + FAQ) ══ */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      <div id="contato" className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 ">
         <div className="max-w-7xl mx-auto">
-          <div className="p-8 sm:p-12 rounded-2xl bg-[#1e2329] border border-[#2b3139]">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              {/* Left Info Column */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0b0e11] border border-[#2b3139] text-xs font-mono text-[#fcd535]">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>CENTRAL DE ATENDIMENTO</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            {/* Coluna Esquerda: Animated AI Chat */}
+            <div className="lg:col-span-6 w-full">
+              <AnimatedAIChat />
+            </div>
+
+            {/* Coluna Direita:t FAQ Interativo Hook Sidebar */}
+            <div className="lg:col-span-6 w-full">
+              <div className="p-6 sm:p-10 rounded-3xl space-y-8">
+                <div className="flex items-center justify-between border-b border-[#2b3139]/80 pb-4">
+                  <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.25em] text-[#929aa5] uppercase">
+                    FAQ & DÚVIDAS FREQUENTES
+                  </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Fale com a Equipe SECOMP
-                </h3>
-                <p className="text-sm text-[#929aa5] leading-relaxed">
-                  Tem dúvidas sobre cotas de patrocínio, credenciamento presencial, horários, certificação de horas ou estandes? Envie uma mensagem direta para a nossa equipe de atendimento.
-                </p>
 
-                <div className="space-y-3 pt-3 text-xs text-[#eaecef]">
-                  <div className="flex items-start gap-2.5">
-                    <MapPin className="w-4 h-4 text-[#fcd535] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">Localização:</strong>
-                      <div className="text-[#707a8a]">UTFPR Câmpus Cornélio Procópio — DACOM (Depto. de Computação)</div>
-                    </div>
-                  </div>
+                <div className="space-y-1 relative">
+                  {[
+                    {
+                      id: 'faq-cotas',
+                      title: 'Como solicitar cotas de patrocínio corporativo?',
+                      shortDesc:
+                        'Selecione a cota desejada (Diamante, Ouro ou Prata) no formulário ao lado para receber o Media Kit executivo e a minuta contratual.',
+                      category: 'Patrocínio',
+                    },
+                    {
+                      id: 'faq-certificados',
+                      title: 'Emissão de certificados e validação de horas complementares',
+                      shortDesc:
+                        'Os certificados oficiais de 30 horas são gerados automaticamente no Passaporte Digital após a validação dos carimbos OTT de presença.',
+                      category: 'Certificados',
+                    },
+                    {
+                      id: 'faq-ideathon',
+                      title: 'Submissão de propostas para o Ideathon Express',
+                      shortDesc:
+                        'Envie o resumo da proposta e integrantes no comando /ideathon para análise prévia da banca de mentores convidados.',
+                      category: 'Ideathon',
+                    },
+                    {
+                      id: 'faq-prazo',
+                      title: 'Qual o prazo de retorno da coordenação acadêmica?',
+                      shortDesc:
+                        'Todas as mensagens enviadas por participantes autenticados são respondidas em até 24 horas úteis pela comissão da UTFPR.',
+                      category: 'Atendimento',
+                    },
+                    {
+                      id: 'faq-imprensa',
+                      title: 'Credenciamento de imprensa e convidados institucionais',
+                      shortDesc:
+                        'Envie sua solicitação informando seu veículo de mídia ou empresa parceira para emissão de crachá VIP.',
+                      category: 'Institucional',
+                    },
+                  ].map((faq, index, arr) => {
+                    const isActive = faq.id === activeFaqId;
+                    const activeIndex = arr.findIndex((item) => item.id === activeFaqId);
+                    const isAbove = index < activeIndex;
+                    const isBelow = index > activeIndex;
 
-                  <div className="flex items-start gap-2.5">
-                    <Mail className="w-4 h-4 text-[#0ecb81] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-white">E-mail Acadêmico:</strong>
-                      <div>
-                        <a href="mailto:dacom@utfpr.edu.br" className="text-[#0ecb81] hover:underline font-mono">
-                          dacom@utfpr.edu.br
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    return (
+                      <div key={faq.id} className="relative flex items-stretch group">
+                        <div className="relative w-8 sm:w-10 shrink-0 flex justify-start">
+                          {isAbove && (
+                            <div className="absolute left-2.5 top-0 bottom-0 w-0 border-l-2 border-dashed border-[#fcd535] transition-colors duration-300" />
+                          )}
 
-              {/* Right Contact Form */}
-              <div className="lg:col-span-7">
-                <div className="p-6 sm:p-8 rounded-xl bg-[#0b0e11] border border-[#2b3139] space-y-5">
-                  <div className="border-b border-[#2b3139] pb-3">
-                    <h4 className="text-base font-bold text-white">Formulário de Atendimento & Patrocínio</h4>
-                    <p className="text-xs text-[#707a8a]">Preencha os campos abaixo para entrar em contato com nossa equipe.</p>
-                  </div>
+                          {isActive && (
+                            <div className="absolute left-2.5 top-0 bottom-0 right-0 pointer-events-none">
+                              <svg
+                                className="w-full h-7 text-[#fcd535] stroke-current overflow-visible"
+                                viewBox="0 0 32 28"
+                                fill="none"
+                              >
+                                <path
+                                  d="M 0 0 V 12 Q 0 20 8 20 H 26"
+                                  strokeWidth="2"
+                                  strokeDasharray="3 3"
+                                  fill="none"
+                                />
+                              </svg>
+                              <div className="absolute left-0 top-7 bottom-0 w-0 border-l-2 border-dashed border-[#2b3139]" />
+                            </div>
+                          )}
 
-                  {submitted ? (
-                    <div className="py-8 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-[#0ecb81]/20 border border-[#0ecb81] flex items-center justify-center text-[#0ecb81] mx-auto">
-                        <CheckCircle2 className="w-6 h-6" />
-                      </div>
-                      <h4 className="text-base font-bold text-white">Mensagem Enviada com Sucesso!</h4>
-                      <p className="text-xs text-[#929aa5] max-w-sm mx-auto">
-                        A equipe da SECOMP 2026 recebeu sua solicitação e responderá no e-mail informado o mais breve possível.
-                      </p>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-mono text-[#707a8a] uppercase mb-1">
-                            Nome Completo *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Ex: Jose de Alencar"
-                            className="w-full h-10 px-3 rounded-md bg-[#1e2329] border border-[#2b3139] text-white text-xs focus:outline-none focus:border-[#fcd535] transition-colors"
-                          />
+                          {isBelow && (
+                            <div className="absolute left-2.5 top-0 bottom-0 w-0 border-l-2 border-dashed border-[#2b3139] transition-colors duration-300" />
+                          )}
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-mono text-[#707a8a] uppercase mb-1">
-                            Seu E-mail *
-                          </label>
-                          <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="nome@empresa.com.br"
-                            className="w-full h-10 px-3 rounded-md bg-[#1e2329] border border-[#2b3139] text-white text-xs focus:outline-none focus:border-[#fcd535] transition-colors font-mono"
-                          />
+                        <div className="flex-grow py-2.5 pl-2">
+                          <button
+                            onClick={() => setActiveFaqId(faq.id)}
+                            className="w-full text-left focus:outline-none flex flex-col items-start gap-1"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`text-sm sm:text-base font-medium transition-all duration-200 ${isActive
+                                  ? 'text-white font-bold tracking-tight text-base sm:text-lg'
+                                  : 'text-[#707a8a] hover:text-[#eaecef]'
+                                  }`}
+                              >
+                                {faq.title}
+                              </span>
+                            </div>
+
+                            <AnimatePresence initial={false}>
+                              {isActive && (
+                                <motion.div
+                                  key="short-desc"
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                                  className="overflow-hidden"
+                                >
+                                  <p className="pt-2 text-xs sm:text-sm text-[#929aa5] leading-relaxed font-sans line-clamp-2 max-w-xl">
+                                    {faq.shortDesc}
+                                  </p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
                         </div>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-mono text-[#707a8a] uppercase mb-1">
-                          Assunto
-                        </label>
-                        <select
-                          value={subject}
-                          onChange={(e) => setSubject(e.target.value)}
-                          className="w-full h-10 px-3 rounded-md bg-[#1e2329] border border-[#2b3139] text-white text-xs focus:outline-none focus:border-[#fcd535] transition-colors"
-                        >
-                          <option value="Dúvida Geral">Dúvida Geral</option>
-                          <option value="Cotas de Patrocínio (Ouro/Prata/Bronze)">Cotas de Patrocínio (Ouro/Prata/Bronze)</option>
-                          <option value="Estande na Feira da Lua">Estande na Feira da Lua</option>
-                          <option value="Inscrições e Minicursos">Inscrições e Minicursos</option>
-                          <option value="Ideathon UTFPR">Ideathon</option>
-                          <option value="Roda de Talentos">Roda de Talentos</option>
-                          <option value="Horas complementares">Horas complementares</option>
-                          <option value="Contato Institucional">Contato Institucional</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono text-[#707a8a] uppercase mb-1">
-                          Mensagem *
-                        </label>
-                        <textarea
-                          required
-                          rows={4}
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          placeholder="Escreva sua dúvida ou proposta de patrocínio..."
-                          className="w-full p-3 rounded-md bg-[#1e2329] border border-[#2b3139] text-white text-xs focus:outline-none focus:border-[#fcd535] transition-colors resize-none"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full h-11 rounded-md bg-[#fcd535] hover:bg-[#f0b90b] text-[#181a20] font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Enviar Mensagem</span>
-                      </button>
-                    </form>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1034,3 +1320,4 @@ export const SponsorsMediaKitSection: React.FC = () => {
 };
 
 export default SponsorsMediaKitSection;
+

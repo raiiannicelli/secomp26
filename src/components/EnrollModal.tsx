@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 
 export const EnrollModal: React.FC = () => {
@@ -10,6 +10,8 @@ export const EnrollModal: React.FC = () => {
     addStamp,
     setUser,
     user,
+    workshops,
+    updateWorkshop,
   } = useUIStore();
 
   const [fullName, setFullName] = useState(user?.name || '');
@@ -19,6 +21,8 @@ export const EnrollModal: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [passportCode, setPassportCode] = useState('');
+
+  const targetWorkshop = workshops.find((w) => w.title === selectedWorkshopForEnroll);
 
   if (!isEnrollModalOpen) return null;
 
@@ -40,6 +44,13 @@ export const EnrollModal: React.FC = () => {
     setSubmitted(true);
 
     setUser({ name: fullName, email, ra });
+
+    // Decrementar vagas ativas do minicurso se existir
+    if (targetWorkshop && targetWorkshop.activeSlots > 0) {
+      updateWorkshop(targetWorkshop.id, {
+        activeSlots: targetWorkshop.activeSlots - 1,
+      });
+    }
 
     // Conceder carimbo de inscrição/minicurso
     addStamp(2);
@@ -76,11 +87,30 @@ export const EnrollModal: React.FC = () => {
             <p className="text-sm text-[#929aa5] max-w-md mx-auto">
               Parabéns, <strong>{fullName}</strong>! Seu credenciamento para a <strong>SECOMP 2026</strong> foi emitido com sucesso (+1 Carimbo no Passaporte).
             </p>
-            {selectedWorkshopForEnroll && (
+            {targetWorkshop ? (
+              <div className="p-3.5 rounded-xl bg-[#0b0e11] border border-[#2b3139] text-left space-y-1.5 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#707a8a] uppercase text-[10px]">Minicurso Selecionado:</span>
+                  <span
+                    className="px-2 py-0.5 rounded text-[10px] font-bold"
+                    style={{ color: targetWorkshop.trackColor, backgroundColor: `${targetWorkshop.trackColor}15` }}
+                  >
+                    {targetWorkshop.trackLabel}
+                  </span>
+                </div>
+                <div className="text-sm font-bold text-white">{targetWorkshop.title}</div>
+                <div className="text-[11px] text-[#929aa5]">
+                  📅 {targetWorkshop.day} de {targetWorkshop.month} • 📍 {targetWorkshop.location}
+                </div>
+                <div className="text-[11px] text-[#fcd535]">
+                  👤 Instrutor: {targetWorkshop.instructor} ({targetWorkshop.partner})
+                </div>
+              </div>
+            ) : selectedWorkshopForEnroll ? (
               <div className="p-3 rounded-lg bg-[#0b0e11] border border-[#2b3139] text-xs text-[#fcd535] font-mono">
                 Minicurso Vinculado: <strong>{selectedWorkshopForEnroll}</strong>
               </div>
-            )}
+            ) : null}
             <div className="p-4 rounded-xl bg-[#0b0e11] border border-[#fcd535]/30 text-left space-y-1 font-mono text-xs">
               <div className="text-[#707a8a]">CÓDIGO DO PASSAPORTE DIGITAL:</div>
               <div className="text-base font-bold text-[#fcd535]">{passportCode}</div>
@@ -97,13 +127,29 @@ export const EnrollModal: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="inline-block px-2.5 py-0.5 rounded bg-[#0b0e11] border border-[#2b3139] text-[11px] font-mono text-[#fcd535]">
                 CREDENCIAMENTO 100% GRATUITO
               </div>
               <h3 className="text-xl font-bold text-white">
-                {selectedWorkshopForEnroll ? `Inscrição: ${selectedWorkshopForEnroll}` : 'Garantir Vaga na SECOMP 2026'}
+                {targetWorkshop ? `Inscrição: ${targetWorkshop.title}` : selectedWorkshopForEnroll ? `Inscrição: ${selectedWorkshopForEnroll}` : 'Garantir Vaga na SECOMP 2026'}
               </h3>
+              {targetWorkshop && (
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <span
+                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
+                    style={{ color: targetWorkshop.trackColor, backgroundColor: `${targetWorkshop.trackColor}15` }}
+                  >
+                    {targetWorkshop.trackLabel}
+                  </span>
+                  <span className="text-[10px] font-mono text-[#929aa5] px-2 py-0.5 rounded bg-[#0b0e11] border border-[#2b3139]">
+                    {targetWorkshop.day} {targetWorkshop.month}
+                  </span>
+                  <span className="text-[10px] font-mono text-[#0ecb81]">
+                    {targetWorkshop.activeSlots} vagas restantes
+                  </span>
+                </div>
+              )}
               <p className="text-xs text-[#929aa5]">
                 Preencha os dados abaixo para receber seu acesso aos 3 turnos, minicursos e Passaporte Digital.
               </p>

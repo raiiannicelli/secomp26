@@ -326,6 +326,9 @@ The product is **multi-theme**: marketing surfaces (homepage, smart-money, futur
 - Custom type stack: `BinanceNova` (display + body) and `BinancePlex` (numbers, prices, financial data). Big stat numbers always render in BinancePlex for tabular consistency.
 - Multi-theme: marketing pages default dark (`{colors.canvas-dark}`); transactional pages flip light (`{colors.canvas-light}`). Yellow CTAs and trading green/red are shared across both.
 - Light footer on dark body: the homepage uses `{colors.surface-soft-light}` (#fafafa) for the footer even when the body above it is dark — a deliberate inversion that visually closes the page.
+- Clean Radical IHC (Zero Glow & Zero Glassmorphism): elimina qualquer efeito de néon, gradientes atmosféricos, overlays translúcidos ou bordas com brilho artificial. A interface apoia-se estritamente em contraste de blocos sólidos (`#0b0e11` / `#1e2329`) e hairlines de 1px.
+- Zero Decorator Icons & Anti-Human Washing: proíbe ícones puramente cosméticos (estrelas, faíscas) e elimina contadores de escassez manipulativos. Foco 100% em clareza de dados auditáveis, transparência e navegação direta ao valor real.
+- High-Impact 3D & Emoções Reais: elementos visuais tridimensionais com física e profundidade sólidas (ex: passaporte, insígnias, estandes 3D) combinados com fotografia real de pessoas para transmissão genuína de emoções e conexões humanas.
 - Trading semantics: green up / red down (`{colors.trading-up}` / `{colors.trading-down}`) for price changes, applied as text color rather than badge background.
 - Card surfaces: `{colors.surface-card-dark}` (#1e2329) for elevated cards on dark; `{colors.canvas-light}` for cards on light. No gradient surfaces, no atmospheric backdrops — flat color blocks throughout.
 - Border radius is small to medium: `{rounded.md}` (6px) for primary buttons, `{rounded.lg}` (8px) for inputs and content cards, `{rounded.xl}` (12px) for elevated card containers, `{rounded.pill}` for prominent feature CTAs.
@@ -565,7 +568,8 @@ Binance's radius hierarchy is tighter than typical marketing systems — most su
 - Don't use yellow for body text or large surface fills. It is for focal-point CTAs and headlines only.
 - Don't use `{colors.trading-up}` / `{colors.trading-down}` as background fills on cards. They are price-direction signals, expressed as text color or small badge fill — never as a card surface.
 - Don't soften display weight. `{typography.hero-display}` and `{typography.display-lg}` are intentionally weight 700 — going to 400 reads as design-portfolio, not trading platform.
-- Don't add atmospheric gradients to the canvas (mesh, aurora, glow effects). Binance trusts color-block contrast — adding atmospheric depth muddies the trading-platform feel.
+- Don't add atmospheric gradients to the canvas (mesh, aurora, glow effects, glassmorphism, blur filter). Binance trusts color-block contrast — adding atmospheric depth or glow muddies the trading-platform feel.
+- Don't insert decorative/cosmetic icons (stars, sparks, floating badges) or use dark patterns (human washing, fake urgency). The UI must remain clean, transparent, audit-ready and focused strictly on functional content and user emotion.
 - Don't invert `{component.button-primary}`'s text color. Black on yellow is the system's signature — white text on yellow loses contrast and brand recognition.
 
 ## Responsive Behavior

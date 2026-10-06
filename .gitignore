@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.vercel
+.env
+.env.local
+*.log
+*.pem
+.DS_Store
+scratch/
+backend/src/**/*.js
+backend/src/**/*.js.map
+.env*

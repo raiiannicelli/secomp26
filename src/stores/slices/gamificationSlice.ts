@@ -10,7 +10,7 @@ export interface GamificationSlice {
   validateOneTimeToken: (rawToken: string) => { success: boolean; message: string };
 }
 
-const DEFAULT_STAMP_IDS = [1, 2, 3, 5];
+const DEFAULT_STAMP_IDS: number[] = [];
 
 export const createGamificationSlice: StateCreator<
   GamificationSlice,

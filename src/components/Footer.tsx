@@ -37,7 +37,6 @@ export const Footer: React.FC = () => {
             <h4 className="font-bold text-white uppercase tracking-wider">Sessões</h4>
             <ul className="space-y-2 text-[#707a8a]">
               <li><a href="#programacao" className="hover:text-[#fcd535] transition-colors">Palestras Técnicas</a></li>
-              <li><a href="#startupday" className="hover:text-[#fcd535] transition-colors">Startup Day</a></li>
               <li><a href="#ideathon" className="hover:text-[#fcd535] transition-colors">Ideathon Express</a></li>
               <li><a href="#talentos" className="hover:text-[#fcd535] transition-colors">Roda de Talentos</a></li>
               <li><a href="#feira-da-lua" className="hover:text-[#fcd535] transition-colors">Feira da Lua</a></li>

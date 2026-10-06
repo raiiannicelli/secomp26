@@ -6,7 +6,7 @@ export const BadgeGeneratorSection: React.FC = () => {
   const { stampsCount, currentLevel, user } = useUIStore();
 
   const [badgeType, setBadgeType] = useState<'ATTENDEE' | 'MASTER'>('MASTER');
-  const [participantName, setParticipantName] = useState(user?.name || 'Rai Moratto');
+  const [participantName, setParticipantName] = useState(user?.name || '');
   const [copiedText, setCopiedText] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -106,7 +106,7 @@ export const BadgeGeneratorSection: React.FC = () => {
     ctx.fillStyle = '#707a8a';
     ctx.font = 'bold 12px monospace';
     ctx.fillText('SELOS PASSAPORTE', 325, 405);
-    ctx.fillStyle = '#fcd535';
+    ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 28px monospace';
     ctx.fillText(`${stampsCount} Carimbos`, 325, 442);
 
@@ -159,7 +159,7 @@ export const BadgeGeneratorSection: React.FC = () => {
     );
 
     // Department Watermark
-    ctx.fillStyle = '#0ecb81';
+    ctx.fillStyle = '#fcd535';
     ctx.font = 'bold 11px monospace';
     ctx.fillText('utfpr.edu.br/secomp2026', w - 240, 545);
   };
@@ -187,15 +187,14 @@ export const BadgeGeneratorSection: React.FC = () => {
   };
 
   return (
-    <section id="gerador-badge" className="py-12 px-4 sm:px-6 lg:px-8 bg-[#0b0e11] border-t border-[#2b3139]/60">
+    <section id="gerador-badge" className="py-12 px-4 sm:px-6 lg:px-8 bg-[#0b0e11]">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#2b3139]/40">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
           <div>
             <h3 className="text-2xl font-bold text-white tracking-tight">
               Badge Oficial do Participante
             </h3>
             <span className="text-xs font-mono text-[#fcd535] uppercase font-bold flex items-center gap-1.5 mt-0.5">
-              <Sparkles className="w-4 h-4" />
               <span>COMPARTILHE SUAS CONQUISTAS NO LINKEDIN</span>
             </span>
           </div>

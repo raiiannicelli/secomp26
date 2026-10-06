@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight } from 'lucide-react';
-import { useUIStore } from '../stores/useUIStore';
+import { Menu, X, ArrowRight, LogOut } from 'lucide-react';
+import { useUIStore, isUserAuthenticated } from '../stores/useUIStore';
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number>(54);
 
-  const { openEnrollModal, currentLevel, stampsCount, activeTab, setActiveTab } = useUIStore();
+  const { openEnrollModal, activeTab, setActiveTab, user, setUser } = useUIStore();
+  const authenticated = isUserAuthenticated(user);
+
+  const handleLogout = async () => {
+    setUser(null);
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { }
+    window.location.href = '/';
+  };
+
+  const handleEnrollClick = () => {
+    if (!authenticated) {
+      window.location.href = '/auth';
+      return;
+    }
+    setActiveTab('PASSAPORTE');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,13 +51,25 @@ export const Navbar: React.FC = () => {
   const navLinks: NavItem[] = [
     { name: 'Programação', href: '#programacao', tab: 'PROGRAMACAO' },
     { name: 'Minicursos', href: '#minicursos', tab: 'PROGRAMACAO' },
-    { name: 'Inscrição', href: '#ideathon-inscricao' },
     { name: 'Passaporte', href: '#passaporte', tab: 'PASSAPORTE' },
-    { name: 'Sobre o DACOMP', href: '# sobre-secomp' },
+    { name: 'Sobre o DACOMP', href: '#sobre-secomp' },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, tab?: 'EVENTO' | 'PASSAPORTE' | 'PROGRAMACAO') => {
     e.preventDefault();
+    if (href === '/auth') {
+      if (!authenticated) {
+        window.location.href = '/auth?mode=register';
+      } else {
+        setActiveTab('PASSAPORTE');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    if (href === '/chameguinho') {
+      window.location.href = '/chameguinho';
+      return;
+    }
     if (tab === 'PROGRAMACAO') {
       setActiveTab('PROGRAMACAO');
       if (href === '#minicursos') {
@@ -99,9 +129,6 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Mark */}
         <a href="#" onClick={handleBrandClick} className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-md bg-[#fcd535] flex items-center justify-center font-mono font-black text-[#181a20] text-lg group-hover:scale-105 transition-transform">
-            SC
-          </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-white text-base">SECOMP</span>
@@ -109,7 +136,7 @@ export const Navbar: React.FC = () => {
                 2026
               </span>
             </div>
-            <p className="text-[10px] text-[#707a8a] hidden sm:block font-medium">Conexoes AI • UTFPR</p>
+            <p className="text-[10px] text-[#707a8a] hidden sm:block font-medium">Conexões Tech • UTFPR</p>
           </div>
         </a>
 
@@ -133,7 +160,7 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* Center Date Badge */}
+        {/* Center Date Badge & Actions */}
         <div className="hidden lg:flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-[#707a8a]">09 A 13 NOV</span>
@@ -141,12 +168,31 @@ export const Navbar: React.FC = () => {
               {daysLeft} DIAS
             </span>
           </div>
-          <button
-            onClick={() => openEnrollModal()}
-            className="px-3.5 py-1.5 rounded-md bg-[#fcd535] hover:bg-[#f0b90b] text-[#181a20] font-bold text-xs font-mono transition-colors"
-          >
-            Garantir Vaga
-          </button>
+
+          {/* Auth Gate Button in front of Garantir Vaga */}
+          {!authenticated ? (
+            <a
+              href="/auth"
+              data-testid="nav-login-btn"
+              className="px-3.5 py-1.5 rounded-md border border-[#2b3139] hover:border-[#fcd535] text-white hover:text-[#fcd535] font-medium text-xs font-mono transition-colors"
+            >
+              Entrar
+            </a>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-[#929aa5] max-w-[120px] truncate" title={user?.email || ''}>
+                {user?.name?.split(' ')[0]}
+              </span>
+              <button
+                onClick={handleLogout}
+                title="Encerrar Sessão"
+                className="p-1.5 rounded-md text-[#707a8a] hover:text-[#f6465d] transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
         </div>
 
         {/* Mobile Hamburger */}
@@ -184,16 +230,24 @@ export const Navbar: React.FC = () => {
               {link.name}
             </a>
           ))}
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              openEnrollModal();
-            }}
-            className="w-full mt-2 h-11 rounded-md bg-[#fcd535] hover:bg-[#f0b90b] text-[#181a20] font-semibold text-sm flex items-center justify-center gap-2"
-          >
-            <span>Garantir Vaga</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {!authenticated ? (
+            <a
+              href="/auth"
+              className="w-full mt-2 h-11 rounded-md bg-[#fcd535] hover:bg-[#f0b90b] text-[#181a20] font-semibold text-sm flex items-center justify-center gap-2"
+            >
+              Entrar
+            </a>
+          ) : (
+            <div className="flex items-center justify-between py-1.5 border-t border-[#2b3139]">
+              <span className="text-xs font-mono text-[#929aa5]">Logado: {user?.name}</span>
+              <button
+                onClick={handleLogout}
+                className="text-xs text-[#f6465d] font-mono hover:underline"
+              >
+                Sair
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>
