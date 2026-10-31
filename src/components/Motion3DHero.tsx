@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { useUIStore, isUserAuthenticated } from '../stores/useUIStore';
+import { motion } from 'framer-motion';
 
 export const Motion3DHero: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -227,19 +228,14 @@ export const Motion3DHero: React.FC = () => {
   }, []);
 
   return (
-    <section className="relative min-h-[85vh] sm:min-h-[92vh] pt-20 sm:pt-24 pb-12 sm:pb-16 flex items-center bg-[#0b0e11] overflow-hidden">
+    <section className="relative min-h-[85vh] sm:min-h-[92vh] pt-20 sm:pt-44 pb-12 sm:pb-1 flex items-center bg-[#0b0e11] overflow-hidden">
       {/* 3D Interactive Canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0 opacity-80" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-7 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Headlines, Value Prop & CTAs */}
           <div className="lg:col-span-7 space-y-5 sm:space-y-6">
-            {/* Live Indicator Chip */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1e2329] border border-[#2b3139] text-[11px] sm:text-xs font-mono text-[#fcd535]">
-              <span className="w-2 h-2 rounded-full bg-[#0ecb81]" />
-              <span>09 A 13 DE NOVEMBRO DE 2026</span>
-            </div>
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.1] break-words">
@@ -259,17 +255,20 @@ export const Motion3DHero: React.FC = () => {
               <button
                 data-testid="hero-cta-btn"
                 onClick={handleHeroEnroll}
-                className="h-12 px-7 rounded-md hover:bg-[#f0b90b] text-[#ffffff] hover:text-[#000000] font-bold text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-95"
-              >
-                <span>{authenticated ? 'Meu Passaporte Digital' : 'Acessar Passaporte'}</span>
+                className="h-12 px-7 rounded-md hover:bg-[#f0b90b] text-[#ffffff] hover:text-[#000000] font-bold text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-95"              >
+                <span>{authenticated ? 'Inscrever-se' : 'Acessar Passaporte'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-              <a
-                href="#programacao"
-                className="h-12 px-6 rounded-md hover:bg-[#f0b90b] text-[#ffffff] hover:text-[#000000] font-semibold text-sm transition-all flex items-center justify-center gap-2"
-              >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('PROGRAMACAO');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="h-12 px-6 rounded-md hover:bg-[#f0b90b] text-[#ffffff] hover:text-[#000000] font-semibold text-sm transition-all flex items-center justify-center gap-2"              >
                 <span>Explorar a Programação</span>
-              </a>
+              </button>
             </div>
 
             {/* Authority Trust Badges */}
@@ -279,9 +278,9 @@ export const Motion3DHero: React.FC = () => {
               </p>
               <div className="flex flex-wrap items-center gap-6 text-xs text-[#eaecef] opacity-90 font-mono">
                 <span className="flex items-center gap-1.5 font-bold">
-                  <ShieldCheck className="w-4 h-4 text-[#fcd535]" /> UTFPR
+                  UTFPR
                 </span>
-                <span className="flex items-center gap-1.5 font-semibold text-[#929aa5]">
+                <span className="flex items-center gap-1.5 font-bold">
                   DACOM
                 </span>
                 <span className="flex items-center gap-1.5 font-semibold text-[#929aa5]">
@@ -290,6 +289,32 @@ export const Motion3DHero: React.FC = () => {
                 <span className="flex items-center gap-1.5 font-semibold text-[#929aa5]">
                   Sebrae Paraná
                 </span>
+              </div>
+            </div>
+            {/* Indicador Flutuante Único de Mouse com Seta Animada */}
+            <div className="shrink-0 flex justify-center items-center pb-2 z-30 pointer-events-none">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[#fcd535] text-xs font-mono">
+                <motion.div
+                  animate={{ y: [0, 4, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="flex items-center gap-2"
+                >
+                  {/* Ícone de Mouse Ilustrando Rolagem */}
+                  <svg className="w-4 h-4 text-[#fcd535]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="5" y="2" width="14" height="20" rx="7" />
+                    <path d="M12 6v4" />
+                  </svg>
+                  {/* Seta animada indicando descida / navegação até o final */}
+                  <motion.div
+                    animate={{ y: [0, 3, 0], opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <svg className="w-3.5 h-3.5 text-[#fcd535]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14" />
+                      <path d="m19 12-7 7-7-7" />
+                    </svg>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
           </div>

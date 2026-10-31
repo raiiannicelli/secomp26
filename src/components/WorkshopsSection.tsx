@@ -73,7 +73,7 @@ export const WorkshopsSection: React.FC<WorkshopsSectionProps> = ({ onSelectWork
             FAZENDO <span className="text-2xl text-[#fcd535]">SETEMBRO & OUTUBRO</span>
           </h2>
           <p className="text-xs font-mono font-bold text-[#fcd535] tracking-widest uppercase">
-            Minicursos Práticos • Vitrine de Atrações
+            Minicursos Práticos • Garanta a vaga!
           </p>
         </div>
 

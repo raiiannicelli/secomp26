@@ -3,8 +3,50 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Camera, RotateCcw, ChevronLeft, ChevronRight, MoveHorizontal } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 
+export const defaultEventPhotos = [
+  {
+    id: 'ph-1',
+    url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200',
+    caption: 'Palco Principal • Keynotes Magnas de Inteligência Artificial',
+    category: 'Palestra',
+    orderIndex: 0,
+  },
+  {
+    id: 'ph-2',
+    url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=1200',
+    caption: 'Hackathon & Ideathon Express • Maratona de Squads UTFPR',
+    category: 'Ideathon',
+    orderIndex: 1,
+  },
+  {
+    id: 'ph-3',
+    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=1200',
+    caption: 'Roda de Talentos & Entrevistas Rápidas com Recrutadores Tech',
+    category: 'Talentos',
+    orderIndex: 2,
+  },
+  {
+    id: 'ph-4',
+    url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200',
+    caption: 'Minicursos Práticos de Engenharia, Nuvem e Cibersegurança',
+    category: 'Minicurso',
+    orderIndex: 3,
+  },
+  {
+    id: 'ph-5',
+    url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1200',
+    caption: 'Feira da Lua & Encerramento Solene no Estacionamento UTFPR',
+    category: 'Encerramento',
+    orderIndex: 4,
+  },
+];
+
 export const CardStackGallery: React.FC = () => {
-  const eventPhotos = useUIStore((state) => state.eventPhotos);
+  const storePhotos = useUIStore((state) => state.eventPhotos);
+  const eventPhotos = React.useMemo(() => {
+    return storePhotos && storePhotos.length > 0 ? storePhotos : defaultEventPhotos;
+  }, [storePhotos]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const topCardRef = useRef<{ swipe: (dir: 'left' | 'right') => Promise<void> } | null>(null);

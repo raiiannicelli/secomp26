@@ -7,17 +7,87 @@ import {
   MoveHorizontal,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
+import { useIsMobile } from '../hooks/useIsMobile';
+
+export const defaultMentors = [
+  {
+    id: 'm-1',
+    name: 'Dr. Fernando Sato',
+    role: 'Coordenador & Pesquisador IA',
+    organization: 'UTFPR-CP',
+    tag: 'IA & DEEP LEARNING',
+    topic: 'Arquiteturas de LLM & Agentes Inteligentes',
+    accentColor: '#fcd535',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 'm-2',
+    name: 'Dra. Beatriz Luz',
+    role: 'Head de Engenharia de Dados',
+    organization: 'TO Brasil',
+    tag: 'BIG DATA & ANALYTICS',
+    topic: 'Data Lakehouse & Governança de Dados',
+    accentColor: '#0ecb81',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 'm-3',
+    name: 'Eng. Carlos Mendonça',
+    role: 'Principal Cloud Architect',
+    organization: 'TCS Global',
+    tag: 'CLOUD & DEVOPS',
+    topic: 'Microsserviços Resilientes em Nuvem',
+    accentColor: '#3b82f6',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 'm-4',
+    name: 'Mariana Alencar',
+    role: 'Lead Security Engineer',
+    organization: 'CyberGuard',
+    tag: 'RED TEAM & DEFENSE',
+    topic: 'Segurança Ofensiva & DevSecOps',
+    accentColor: '#f6465d',
+    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 'm-5',
+    name: 'Prof. Ricardo Silva',
+    role: 'Diretor de Inovação',
+    organization: 'Incubadora Sprint',
+    tag: 'STARTUPS & BUSINESS',
+    topic: 'Modelagem de Negócio & Pitches de Alto Impacto',
+    accentColor: '#8a3ffc',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+  },
+  {
+    id: 'm-6',
+    name: 'Camila Torres',
+    role: 'Staff Product Designer',
+    organization: 'ForLogic',
+    tag: 'UX/UI & DESIGN SYSTEM',
+    topic: 'Design Systems & Interfaces Escaláveis',
+    accentColor: '#fcd535',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+  },
+];
 
 export const ScrollVelocityMentors: React.FC = () => {
+  const isMobile = useIsMobile(640);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragConstraintWidth, setDragConstraintWidth] = useState(0);
   const x = useMotionValue(0);
 
-  // Garante a extração estrita de mentores únicos por id (prevenindo acúmulo no localStorage)
-  const rawMentors = useUIStore((state) => state.mentors);
+  // Extração estrita de mentores com fallback garantido
+  const storeMentors = useUIStore((state) => state.mentors);
+  const rawMentors = React.useMemo(() => {
+    return storeMentors && storeMentors.length > 0 ? storeMentors : defaultMentors;
+  }, [storeMentors]);
+
   const baseMentors = React.useMemo(() => {
-    return Array.from(new Map(rawMentors.map((m) => [m.id, m])).values());
+    if (!Array.isArray(rawMentors)) return defaultMentors;
+    return Array.from(new Map(rawMentors.filter(Boolean).map((m) => [m.id || Math.random(), m])).values());
   }, [rawMentors]);
 
   // Duplica a lista única em 3 sequências idênticas para a fita infinita
@@ -142,7 +212,7 @@ export const ScrollVelocityMentors: React.FC = () => {
           onMouseLeave={() => setIsHovered(false)}
           className="w-full flex items-center py-6"
           style={{
-            transform: 'rotateX(10deg) rotateY(-18deg) rotateZ(4deg) translateZ(0)',
+            transform: 'rotateX(8deg) rotateY(-12deg) rotateZ(3deg) translateZ(0)',
             transformStyle: 'preserve-3d',
           }}
         >
@@ -152,7 +222,7 @@ export const ScrollVelocityMentors: React.FC = () => {
             dragConstraints={{ left: dragConstraintWidth, right: 0 }}
             dragElastic={0.1}
             style={{ x, touchAction: 'pan-y' }}
-            className="flex items-center gap-8 sm:gap-10 px-8 sm:px-20 cursor-grab active:cursor-grabbing shrink-0 select-none"
+            className="flex items-center gap-6 sm:gap-10 px-4 sm:px-20 cursor-grab active:cursor-grabbing shrink-0 select-none"
           >
             {mentors.map((mentor, index) => {
               const realIndex = (index % baseMentors.length) + 1;
@@ -160,9 +230,8 @@ export const ScrollVelocityMentors: React.FC = () => {
               return (
                 <div
                   key={`${mentor.id}-${index}`}
-                  className="relative group flex flex-col shrink-0 transition-transform duration-300 hover:-translate-y-6"
+                  className="relative group flex flex-col shrink-0 transition-transform duration-300 hover:-translate-y-6 w-60 sm:w-72 md:w-80"
                   style={{
-                    width: typeof window !== 'undefined' && window.innerWidth < 640 ? '200px' : '300px',
                     transformStyle: 'preserve-3d',
                   }}
                 >
@@ -180,9 +249,8 @@ export const ScrollVelocityMentors: React.FC = () => {
 
                   {/* Main 3D Card Body with Portrait Atmosphere */}
                   <div
-                    className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-[#181a20] transition-all duration-300 flex flex-col justify-between"
+                    className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-[#181a20] transition-all duration-300 flex flex-col justify-between h-[360px] sm:h-[420px] md:h-[440px]"
                     style={{
-                      height: typeof window !== 'undefined' && window.innerWidth < 640 ? '310px' : '440px',
                       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 15px rgba(252, 213, 53, 0.05)',
                     }}
                   >

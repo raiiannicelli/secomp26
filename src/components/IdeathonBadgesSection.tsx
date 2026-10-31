@@ -14,6 +14,7 @@ import {
   Cpu,
   Trophy,
 } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface IdeathonPhase {
   number: string;
@@ -47,6 +48,8 @@ const Card3D: React.FC<Card3DProps> = ({
   onSelect,
   renderIcon,
 }) => {
+  const isMobile = useIsMobile(640);
+
   // Posicionamento e rotação 3D simétrica (Flip no Eixo X)
   const transform = useTransform(currentStep, (cur) => {
     const delta = index - cur;
@@ -54,12 +57,12 @@ const Card3D: React.FC<Card3DProps> = ({
     // Rotação suave no eixo X: card ativo fica reto (0deg), os acima giram para trás (-35deg), os abaixo giram (+35deg)
     const rotateX = Math.max(-45, Math.min(45, delta * -35));
 
-    // Deslocamento Y vertical adaptado para mobile vs desktop para evitar sobreposição em telas pequenas
-    const stepDistance = typeof window !== 'undefined' && window.innerWidth < 640 ? 95 : 160;
+    // Deslocamento Y vertical e recuo Z para a pilha 3D
+    const stepDistance = isMobile ? 120 : 160;
     const y = delta * stepDistance;
 
     // Recuo em Z: card ativo vem para a frente (Z: 0), os inativos recuam para o fundo
-    const z = -Math.abs(delta) * (typeof window !== 'undefined' && window.innerWidth < 640 ? 80 : 120);
+    const z = -Math.abs(delta) * (isMobile ? 95 : 120);
 
     return `translate3d(0, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateX(${rotateX.toFixed(1)}deg)`;
   });

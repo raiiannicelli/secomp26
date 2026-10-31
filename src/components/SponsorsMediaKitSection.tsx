@@ -180,7 +180,7 @@ const SebraePrLogo: React.FC<{ className?: string }> = ({ className = "h-20" }) 
   </svg>
 );
 
-export const partners: Partner[] = [
+export const defaultPartners: Partner[] = [
   {
     id: 'to-brasil',
     name: 'TO Brasil',
@@ -308,6 +308,8 @@ export const partners: Partner[] = [
     orderIndex: 5,
   },
 ];
+
+export const partners: Partner[] = defaultPartners;
 
 // Componente de Canvas 60fps para o Túnel Sci-Fi de Sucção / Warp Speed Streamlines
 interface WarpTunnelCanvasProps {
@@ -861,20 +863,23 @@ const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const basePartners = React.useMemo(() => {
-    return Array.from(new Map(partners.map((p) => [p.id, p])).values());
+    const list = (partners && partners.length > 0) ? partners : defaultPartners;
+    return Array.from(new Map(list.map((p) => [p.id, p])).values());
   }, [partners]);
 
-  const currentPartner = basePartners[activeIndex] || basePartners[0];
+  const currentPartner = basePartners[activeIndex] || basePartners[0] || defaultPartners[0];
 
   // Alternância automática de 3 segundos por parceiro (TV, monitor, tablet e celular)
   const [isPaused, setIsPaused] = useState(false);
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || basePartners.length === 0) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % basePartners.length);
     }, 3000);
     return () => clearInterval(interval);
   }, [isPaused, basePartners.length]);
+
+  if (!currentPartner) return null;
 
   return (
     <motion.div
@@ -909,14 +914,14 @@ const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : basePartners.length - 1))}
-              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] hover:border-[#fcd535] text-white flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] text-white flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Anterior"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
             </button>
             <button
               onClick={() => setActiveIndex((prev) => (prev < basePartners.length - 1 ? prev + 1 : 0))}
-              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] hover:border-[#fcd535] text-white flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-lg bg-[#181a20]/90 hover:bg-[#2b3139] text-white flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Próximo"
             >
               <ChevronRight className="w-5 h-5" />
@@ -925,7 +930,7 @@ const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
         </div>
       </div>
 
-      {/* 3. PALCO CENTRAL DE DESTAQUE PREMIUM (DESIGN INDUSTRIAL PLANO E NÍTIDO) */}
+      {/* 3. PALCO CENTRAL DE DESTAQUE PREMIUM (CARDS FLUTUANTES SEM BORDA) */}
       <div
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -933,39 +938,61 @@ const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
       >
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentPartner.id}
+            key={currentPartner?.id || 'default-partner'}
             initial={{ opacity: 0, y: 15, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -15, scale: 0.97 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="flex flex-col justify-center items-center sm:p-10 flex flex-col md:flex-row items-center relative overflow-hidden"
           >
-
-            {/* Container da Logo com Fundo Escuro Sólido Limpo */}
-            <div className="w-full md:w-1/2 flex items-center justify-center p-6 rounded-2xl shadow-inner shrink-0 min-h-[180px] sm:min-h-[220px]">
-              {renderLogo(
+            {/* Container da Logo Flutuante */}
+            <motion.div
+              animate={{
+                y: [0, -10, 0],
+              }}
+              transition={{
+                duration: 3.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="w-full md:w-1/2 flex items-center justify-center p-6 sm:p-8 rounded-3xl shrink-0 min-h-[180px] sm:min-h-[220px]"
+            >
+              {currentPartner && renderLogo(
                 currentPartner.id,
-                'w-full max-h-28 object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]'
+                'w-full max-h-28 object-contain filter drop-shadow-[0_6px_20px_rgba(0,0,0,0.9)]'
               )}
-            </div>
+            </motion.div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* 4. BARRA ORBITAL DE MINIATURAS E SELEÇÃO RÁPIDA (CARROSSEL PLANO) */}
+      {/* 4. BARRA ORBITAL DE MINIATURAS E SELEÇÃO RÁPIDA (CARROSSEL FLUTUANTE SEM BORDA) */}
       <div className="w-full max-w-5xl mx-auto z-20 pb-2">
         <div className="flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 no-scrollbar">
           {basePartners.map((partner, idx) => {
             const isSelected = activeIndex === idx;
             return (
-              <button
+              <motion.button
                 key={partner.id}
+                type="button"
+                onClick={() => setActiveIndex(idx)}
+                animate={{
+                  y: isSelected ? [0, -4, 0] : 0,
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: isSelected ? Infinity : 0,
+                  ease: 'easeInOut',
+                }}
+                className={`transition-all rounded-2xl p-3 cursor-pointer ${isSelected
+                  ? 'scale-105'
+                  : 'opacity-50 hover:opacity-100 hover:scale-102'
+                  }`}
               >
                 <div className="w-20 h-20 flex items-center justify-center pointer-events-none">
                   {renderLogo(partner.id, 'max-h-15 max-w-full object-contain')}
                 </div>
-
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -975,7 +1002,10 @@ const PartnersRunway3DStage: React.FC<PartnersRunway3DStageProps> = ({
 };
 
 export const SponsorsMediaKitSection: React.FC = () => {
-  const partners = useUIStore((state) => state.partners);
+  const storePartners = useUIStore((state) => state.partners);
+  const partners = React.useMemo(() => {
+    return storePartners && storePartners.length > 0 ? storePartners : defaultPartners;
+  }, [storePartners]);
   const user = useUIStore((state) => state.user);
   const authenticated = isUserAuthenticated(user);
 

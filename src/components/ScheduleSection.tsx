@@ -91,7 +91,7 @@ export const ScheduleSection: React.FC = () => {
             OS <span className="text-2xl text-[#fcd535]">5 DIAS</span>
           </h2>
           <p className="text-xs font-mono font-bold text-[#fcd535] tracking-widest uppercase">
-            Palestras & Painéis • Vitrine Pública de Atrações
+            Palestras & Painéis • Vitrine Pública
           </p>
         </div>
 

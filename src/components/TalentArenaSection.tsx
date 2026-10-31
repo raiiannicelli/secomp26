@@ -17,6 +17,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { useUIStore, isUserAuthenticated } from '../stores/useUIStore';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface SlotItem {
   id: string;
@@ -48,6 +49,7 @@ interface CompanyProfile {
 const CYLINDER_RADIUS = 380; // Depth radius of the revolver cylinder
 
 export const TalentArenaSection: React.FC = () => {
+  const isMobile = useIsMobile(640);
   const { addStamp, user, talentPlatforms } = useUIStore();
   const authenticated = isUserAuthenticated(user);
 
@@ -220,7 +222,7 @@ export const TalentArenaSection: React.FC = () => {
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight uppercase">
               Roda de <span className="text-[#fcd535]">Talentos</span>
             </h2>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono text-[#fcd535]">
+            <div className="inline-flex items-center gap-2 flex-wrap px-3.5 py-1 rounded-full text-xs font-mono text-[#fcd535]">
               <span>QUINTA-FEIRA • 12 NOV</span>
             </div>
           </div>
@@ -248,7 +250,7 @@ export const TalentArenaSection: React.FC = () => {
         <div className="relative max-w-5xl mx-auto min-h-[640px] flex flex-col items-center justify-center">
 
           {/* Upward Hologram Projection Cone (Feixe de Luz Emitido da Base para Cima) */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] sm:w-[720px] h-[520px] pointer-events-none z-10">
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[320px] sm:max-w-[480px] md:max-w-[720px] h-[400px] sm:h-[520px] pointer-events-none z-10">
             <div
               className="w-full h-full opacity-35 transition-all duration-700"
               style={{
@@ -279,20 +281,20 @@ export const TalentArenaSection: React.FC = () => {
                 const rad = (normalizedAngle * Math.PI) / 180;
 
                 // Planar Cylinder Horizontal Translation & Depth Scale
-                const radius = typeof window !== 'undefined' && window.innerWidth < 640 ? 115 : 330;
+                const radius = isMobile ? 180 : 330;
                 const xPos = Math.sin(rad) * radius;
                 const depthFactor = (Math.cos(rad) + 1) / 2; // 1 at front (0 deg), 0 at back (180 deg)
 
                 // Front-facing chamber status
                 const isFront = normalizedAngle < anglePerItem / 2 || normalizedAngle > 360 - anglePerItem / 2;
-                const opacity = Math.max(0.15, Math.pow(depthFactor, 1.2));
+                const opacity = Math.max(0.2, Math.pow(depthFactor, 1.2));
                 const scale = 0.78 + depthFactor * 0.22; // Exactly 1.0 when in front
                 const zIndex = Math.round(depthFactor * 30);
                 const chamberNumber = String(index + 1).padStart(2, '0');
                 const totalChambers = String(activeCompaniesList.length).padStart(2, '0');
 
-                // Only render visible cards in front and sides to avoid clutter
-                if (depthFactor < 0.1) return null;
+                // Render visible cards in 3D perspective
+                if (depthFactor < 0.08) return null;
 
                 return (
                   <motion.div
@@ -352,11 +354,11 @@ export const TalentArenaSection: React.FC = () => {
                     >
                       {/* Holographic Pure Glass Background & Rim Glow */}
                       <div
-                        className="absolute inset-0 rounded-2xl pointer-events-none backdrop-blur-2xl transition-all duration-500"
+                        className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-500 backdrop-blur-2xl"
                         style={{
                           background: isFront
-                            ? `linear-gradient(135deg, rgba(12, 16, 22, 0.92) 0%, rgba(6, 8, 12, 0.92) 100%)`
-                            : 'linear-gradient(135deg, rgba(12, 16, 22, 0.92) 0%, rgba(6, 8, 12, 0.92) 100%)',
+                            ? `linear-gradient(135deg, rgba(12, 16, 22, 0.95) 0%, rgba(6, 8, 12, 0.95) 100%)`
+                            : 'linear-gradient(135deg, rgba(12, 16, 22, 0.95) 0%, rgba(6, 8, 12, 0.95) 100%)',
                           borderColor: isFront ? `${company.color}80` : '#2b3139',
                         }}
                       />
